@@ -1,0 +1,737 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriGenius AI Assistant</title>
+    <meta name="description" content="Get instant agricultural advice from our AI-powered assistant">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <style>
+        .chat-page {
+            background: linear-gradient(135deg, var(--very-light-green) 0%, var(--bg-secondary) 100%);
+            min-height: 100vh;
+            padding: var(--spacing-lg) 0;
+        }
+
+        .chat-container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: var(--bg-card);
+            border-radius: var(--radius-2xl);
+            box-shadow: var(--shadow-xl);
+            overflow: hidden;
+            height: 80vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            background: var(--gradient-primary);
+            color: white;
+            padding: var(--spacing-lg);
+            text-align: center;
+            position: relative;
+        }
+
+        .chat-header h1 {
+            margin: 0;
+            font-size: var(--font-size-2xl);
+            font-weight: 600;
+        }
+
+        .chat-header p {
+            margin: var(--spacing-sm) 0 0 0;
+            opacity: 0.9;
+        }
+
+        .chat-status {
+            position: absolute;
+            top: var(--spacing-md);
+            right: var(--spacing-lg);
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-size: var(--font-size-sm);
+        }
+
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            background: #4ade80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .suggestions-container {
+            padding: var(--spacing-lg);
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .suggestions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: var(--spacing-md);
+        }
+
+        .suggestion-card {
+            background: var(--bg-tertiary);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-md);
+        }
+
+        .suggestion-card:hover {
+            background: var(--primary-green);
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        .suggestion-icon {
+            font-size: var(--font-size-xl);
+            color: var(--primary-green);
+            transition: color 0.3s ease;
+        }
+
+        .suggestion-card:hover .suggestion-icon {
+            color: white;
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: var(--spacing-lg);
+            background: var(--bg-secondary);
+        }
+
+        .message {
+            margin-bottom: var(--spacing-lg);
+            display: flex;
+            align-items: flex-start;
+            gap: var(--spacing-md);
+            animation: slideUp 0.3s ease;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            flex-shrink: 0;
+        }
+
+        .message.bot .message-avatar {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .message.user .message-avatar {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .message-content {
+            max-width: 70%;
+            padding: var(--spacing-md) var(--spacing-lg);
+            border-radius: var(--radius-lg);
+            position: relative;
+        }
+
+        .message.bot .message-content {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+        }
+
+        .message.user .message-content {
+            background: var(--primary-green);
+            color: white;
+        }
+
+        .message-time {
+            font-size: var(--font-size-xs);
+            opacity: 0.7;
+            margin-top: var(--spacing-xs);
+        }
+
+        .typing-indicator {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: var(--spacing-md);
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--text-muted);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 60%, 100% { transform: translateY(0); }
+            30% { transform: translateY(-10px); }
+        }
+
+        .chat-input-container {
+            padding: var(--spacing-lg);
+            background: var(--bg-card);
+            border-top: 1px solid var(--border-color);
+        }
+
+        .chat-input-wrapper {
+            display: flex;
+            gap: var(--spacing-md);
+            align-items: flex-end;
+        }
+
+        .chat-input {
+            flex: 1;
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            resize: none;
+            max-height: 120px;
+            font-family: var(--font-primary);
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary-green);
+            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
+            outline: none;
+        }
+
+        .input-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .action-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            border-radius: var(--radius-lg);
+            background: var(--bg-tertiary);
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .action-btn:hover {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .send-btn {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .sensor-data-widget {
+            background: var(--bg-tertiary);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-md);
+            margin: var(--spacing-md) 0;
+        }
+
+        .sensor-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: var(--spacing-sm);
+        }
+
+        .sensor-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            background: var(--bg-card);
+            border-radius: var(--radius-md);
+        }
+
+        .sensor-icon {
+            font-size: var(--font-size-lg);
+        }
+
+        .sensor-value {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+
+        .welcome-message {
+            text-align: center;
+            padding: var(--spacing-2xl);
+            color: var(--text-muted);
+        }
+
+        .welcome-message i {
+            font-size: 4rem;
+            color: var(--primary-green);
+            margin-bottom: var(--spacing-lg);
+        }
+
+        @media (max-width: 768px) {
+            .chat-container {
+                height: 90vh;
+                margin: 0 var(--spacing-md);
+            }
+
+            .suggestions-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .message-content {
+                max-width: 85%;
+            }
+
+            .sensor-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body class="chat-page">
+    {% include 'navbar.html' %}
+
+    <div class="container-fluid">
+        <div class="chat-container">
+            <!-- Chat Header -->
+            <div class="chat-header">
+                <div class="chat-status">
+                    <div class="status-indicator"></div>
+                    <span>Online</span>
+                </div>
+                <h1><i class="fas fa-robot"></i> AgriGenius AI Assistant</h1>
+                <p>Your intelligent farming companion powered by advanced AI</p>
+            </div>
+
+            <!-- Quick Suggestions -->
+            <div class="suggestions-container" id="suggestionsContainer">
+                <h6 class="mb-3"><i class="fas fa-lightbulb"></i> Quick Questions</h6>
+                <div class="suggestions-grid">
+                    <div class="suggestion-card" data-suggestion="What are the current sensor readings?">
+                        <i class="suggestion-icon fas fa-chart-line"></i>
+                        <div>
+                            <strong>Sensor Data</strong>
+                            <small class="d-block text-muted">Check current readings</small>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-card" data-suggestion="How can I improve my crop yield?">
+                        <i class="suggestion-icon fas fa-seedling"></i>
+                        <div>
+                            <strong>Crop Optimization</strong>
+                            <small class="d-block text-muted">Improve your harvest</small>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-card" data-suggestion="What fertilizer should I use?">
+                        <i class="suggestion-icon fas fa-flask"></i>
+                        <div>
+                            <strong>Fertilizer Advice</strong>
+                            <small class="d-block text-muted">Get nutrient recommendations</small>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-card" data-suggestion="When should I water my plants?">
+                        <i class="suggestion-icon fas fa-tint"></i>
+                        <div>
+                            <strong>Watering Schedule</strong>
+                            <small class="d-block text-muted">Optimize irrigation</small>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-card" data-suggestion="How to prevent plant diseases?">
+                        <i class="suggestion-icon fas fa-shield-alt"></i>
+                        <div>
+                            <strong>Disease Prevention</strong>
+                            <small class="d-block text-muted">Protect your crops</small>
+                        </div>
+                    </div>
+
+                    <div class="suggestion-card" data-suggestion="What's the weather forecast for farming?">
+                        <i class="suggestion-icon fas fa-cloud-sun"></i>
+                        <div>
+                            <strong>Weather Insights</strong>
+                            <small class="d-block text-muted">Plan with weather data</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Messages -->
+            <div class="chat-messages" id="chatMessages">
+                <div class="welcome-message" id="welcomeMessage">
+                    <i class="fas fa-robot"></i>
+                    <h4>Welcome to AgriGenius AI Assistant!</h4>
+                    <p>I'm here to help you with all your farming questions. Ask me about crops, soil, weather, or click on a suggestion above to get started.</p>
+
+                    <!-- Current Sensor Data Widget -->
+                    <div class="sensor-data-widget">
+                        <h6><i class="fas fa-satellite-dish"></i> Current Farm Conditions</h6>
+                        <div class="sensor-grid">
+                            <div class="sensor-item">
+                                <i class="sensor-icon fas fa-thermometer-half text-danger"></i>
+                                <div>
+                                    <div class="sensor-value" id="currentTemp">24°C</div>
+                                    <small>Temperature</small>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <i class="sensor-icon fas fa-tint text-primary"></i>
+                                <div>
+                                    <div class="sensor-value" id="currentHumidity">68%</div>
+                                    <small>Humidity</small>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <i class="sensor-icon fas fa-seedling text-success"></i>
+                                <div>
+                                    <div class="sensor-value" id="currentSoil">45%</div>
+                                    <small>Soil Moisture</small>
+                                </div>
+                            </div>
+                            <div class="sensor-item">
+                                <i class="sensor-icon fas fa-flask text-warning"></i>
+                                <div>
+                                    <div class="sensor-value" id="currentPH">6.8</div>
+                                    <small>pH Level</small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Chat Input -->
+            <div class="chat-input-container">
+                <div class="chat-input-wrapper">
+                    <textarea
+                        id="chatInput"
+                        class="chat-input"
+                        placeholder="Ask me anything about farming, crops, soil, weather..."
+                        rows="1"></textarea>
+
+                    <div class="input-actions">
+                        <button type="button" class="action-btn" id="attachBtn" title="Attach file">
+                            <i class="fas fa-paperclip"></i>
+                        </button>
+                        <button type="button" class="action-btn" id="micBtn" title="Voice input">
+                            <i class="fas fa-microphone"></i>
+                        </button>
+                        <button type="button" class="action-btn send-btn" id="sendBtn" title="Send message">
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <div class="mt-2 text-center">
+                    <small class="text-muted">
+                        <i class="fas fa-info-circle"></i>
+                        AgriGenius AI can make mistakes. Always verify important farming decisions.
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Hidden file input -->
+    <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx,.txt" style="display: none;">
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script>
+        class AgriChatBot {
+            constructor() {
+                this.chatMessages = document.getElementById('chatMessages');
+                this.chatInput = document.getElementById('chatInput');
+                this.sendBtn = document.getElementById('sendBtn');
+                this.suggestionsContainer = document.getElementById('suggestionsContainer');
+                this.welcomeMessage = document.getElementById('welcomeMessage');
+
+                this.initializeEventListeners();
+                this.updateSensorData();
+                this.startSensorUpdates();
+            }
+
+            initializeEventListeners() {
+                // Send button click
+                this.sendBtn.addEventListener('click', () => this.sendMessage());
+
+                // Enter key to send (Shift+Enter for new line)
+                this.chatInput.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' && !e.shiftKey) {
+                        e.preventDefault();
+                        this.sendMessage();
+                    }
+                });
+
+                // Auto-resize textarea
+                this.chatInput.addEventListener('input', () => {
+                    this.chatInput.style.height = 'auto';
+                    this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
+                });
+
+                // Suggestion cards
+                document.querySelectorAll('.suggestion-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const suggestion = card.dataset.suggestion;
+                        this.chatInput.value = suggestion;
+                        this.sendMessage();
+                    });
+                });
+
+                // File attachment
+                document.getElementById('attachBtn').addEventListener('click', () => {
+                    document.getElementById('fileInput').click();
+                });
+
+                // Voice input (placeholder)
+                document.getElementById('micBtn').addEventListener('click', () => {
+                    this.startVoiceInput();
+                });
+            }
+
+            async sendMessage() {
+                const message = this.chatInput.value.trim();
+                if (!message) return;
+
+                // Hide welcome message and suggestions after first message
+                if (this.welcomeMessage) {
+                    this.welcomeMessage.style.display = 'none';
+                    this.suggestionsContainer.style.display = 'none';
+                }
+
+                // Add user message
+                this.addMessage(message, 'user');
+                this.chatInput.value = '';
+                this.chatInput.style.height = 'auto';
+
+                // Show typing indicator
+                this.showTypingIndicator();
+
+                try {
+                    // Send to backend
+                    const response = await fetch('/get_response', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ message: message })
+                    });
+
+                    const data = await response.json();
+
+                    // Remove typing indicator
+                    this.hideTypingIndicator();
+
+                    if (data.error) {
+                        this.addMessage('Sorry, I encountered an error. Please try again.', 'bot');
+                    } else {
+                        this.addMessage(data.response, 'bot');
+
+                        // Update sensor data if included
+                        if (data.sensor_data) {
+                            this.updateSensorDataFromResponse(data.sensor_data);
+                        }
+                    }
+                } catch (error) {
+                    this.hideTypingIndicator();
+                    this.addMessage('Sorry, I\'m having trouble connecting. Please check your internet connection and try again.', 'bot');
+                }
+            }
+
+            addMessage(content, sender) {
+                const messageDiv = document.createElement('div');
+                messageDiv.className = `message ${sender}`;
+
+                const avatar = document.createElement('div');
+                avatar.className = 'message-avatar';
+                avatar.innerHTML = sender === 'user' ?
+                    (window.currentUser ? window.currentUser.charAt(0).toUpperCase() : 'U') :
+                    '<i class="fas fa-robot"></i>';
+
+                const messageContent = document.createElement('div');
+                messageContent.className = 'message-content';
+                messageContent.innerHTML = this.formatMessage(content);
+
+                const messageTime = document.createElement('div');
+                messageTime.className = 'message-time';
+                messageTime.textContent = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+
+                messageContent.appendChild(messageTime);
+                messageDiv.appendChild(avatar);
+                messageDiv.appendChild(messageContent);
+
+                this.chatMessages.appendChild(messageDiv);
+                this.scrollToBottom();
+            }
+
+            formatMessage(content) {
+                // Convert newlines to <br> and format lists
+                return content
+                    .replace(/\n/g, '<br>')
+                    .replace(/• /g, '<br>• ')
+                    .replace(/(\d+\.\s)/g, '<br>$1');
+            }
+
+            showTypingIndicator() {
+                const typingDiv = document.createElement('div');
+                typingDiv.className = 'message bot typing-message';
+                typingDiv.innerHTML = `
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <div class="typing-indicator">
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                            <div class="typing-dot"></div>
+                        </div>
+                    </div>
+                `;
+
+                this.chatMessages.appendChild(typingDiv);
+                this.scrollToBottom();
+            }
+
+            hideTypingIndicator() {
+                const typingMessage = this.chatMessages.querySelector('.typing-message');
+                if (typingMessage) {
+                    typingMessage.remove();
+                }
+            }
+
+            scrollToBottom() {
+                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
+            }
+
+            updateSensorData() {
+                // Simulate sensor data updates
+                const temp = Math.floor(Math.random() * 10) + 20;
+                const humidity = Math.floor(Math.random() * 20) + 60;
+                const soil = Math.floor(Math.random() * 30) + 35;
+                const ph = (Math.random() * 2 + 6).toFixed(1);
+
+                document.getElementById('currentTemp').textContent = temp + '°C';
+                document.getElementById('currentHumidity').textContent = humidity + '%';
+                document.getElementById('currentSoil').textContent = soil + '%';
+                document.getElementById('currentPH').textContent = ph;
+            }
+
+            updateSensorDataFromResponse(sensorData) {
+                if (sensorData.temperature) {
+                    document.getElementById('currentTemp').textContent = sensorData.temperature + '°C';
+                }
+                if (sensorData.humidity) {
+                    document.getElementById('currentHumidity').textContent = sensorData.humidity + '%';
+                }
+                if (sensorData.soil_moisture) {
+                    document.getElementById('currentSoil').textContent = sensorData.soil_moisture + '%';
+                }
+                if (sensorData.ph_level) {
+                    document.getElementById('currentPH').textContent = sensorData.ph_level;
+                }
+            }
+
+            startSensorUpdates() {
+                // Update sensor data every 30 seconds
+                setInterval(() => {
+                    this.updateSensorData();
+                }, 30000);
+            }
+
+            startVoiceInput() {
+                if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+                    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+                    const recognition = new SpeechRecognition();
+
+                    recognition.continuous = false;
+                    recognition.interimResults = false;
+                    recognition.lang = 'en-US';
+
+                    const micBtn = document.getElementById('micBtn');
+                    micBtn.innerHTML = '<i class="fas fa-stop"></i>';
+                    micBtn.style.background = 'var(--primary-green)';
+                    micBtn.style.color = 'white';
+
+                    recognition.onresult = (event) => {
+                        const transcript = event.results[0][0].transcript;
+                        this.chatInput.value = transcript;
+                        this.resetMicButton();
+                    };
+
+                    recognition.onerror = () => {
+                        this.resetMicButton();
+                        alert('Voice recognition failed. Please try again.');
+                    };
+
+                    recognition.onend = () => {
+                        this.resetMicButton();
+                    };
+
+                    recognition.start();
+                } else {
+                    alert('Voice recognition is not supported in your browser.');
+                }
+            }
+
+            resetMicButton() {
+                const micBtn = document.getElementById('micBtn');
+                micBtn.innerHTML = '<i class="fas fa-microphone"></i>';
+                micBtn.style.background = '';
+                micBtn.style.color = '';
+            }
+        }
+
+        // Initialize chat when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.agriChatBot = new AgriChatBot();
+
+            // Set current user for avatar
+            {% if current_user.is_authenticated %}
+            window.currentUser = '{{ current_user.username }}';
+            {% endif %}
+        });
+    </script>
+</body>
+</html>

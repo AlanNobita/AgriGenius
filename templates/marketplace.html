@@ -1,0 +1,655 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AgriGenius Marketplace - Buy & Sell Agricultural Products</title>
+    <meta name="description" content="Discover and trade agricultural products, tools, and equipment in our integrated marketplace">
+
+    <!-- Stylesheets -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="fade-in">
+    {% include 'navbar.html' %}
+
+    <!-- Hero Section -->
+    <section class="hero-section py-5">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-6">
+                    <h1 class="display-4 fw-bold text-white mb-4">
+                        <i class="fas fa-store"></i> AgriGenius Marketplace
+                    </h1>
+                    <p class="lead text-white mb-4">
+                        Connect with farmers, suppliers, and buyers worldwide. Trade agricultural products, tools, and equipment in our trusted marketplace.
+                    </p>
+                    <div class="d-flex gap-3">
+                        <button class="btn btn-light btn-lg" data-bs-toggle="modal" data-bs-target="#sellModal">
+                            <i class="fas fa-plus"></i> Sell Product
+                        </button>
+                        <button class="btn btn-outline-light btn-lg" id="browseBtn">
+                            <i class="fas fa-search"></i> Browse Products
+                        </button>
+                    </div>
+                </div>
+                <div class="col-lg-6">
+                    <div class="row g-3">
+                        <div class="col-6">
+                            <div class="stat-card text-center">
+                                <span class="stat-number">2,847</span>
+                                <span class="stat-label">Products Listed</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-card text-center">
+                                <span class="stat-number">1,234</span>
+                                <span class="stat-label">Active Sellers</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-card text-center">
+                                <span class="stat-number">5,691</span>
+                                <span class="stat-label">Happy Buyers</span>
+                            </div>
+                        </div>
+                        <div class="col-6">
+                            <div class="stat-card text-center">
+                                <span class="stat-number">98%</span>
+                                <span class="stat-label">Success Rate</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Search and Filters -->
+    <section class="py-4 bg-light">
+        <div class="container">
+            <div class="row g-3 align-items-center">
+                <div class="col-md-4">
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="fas fa-search"></i></span>
+                        <input type="text" class="form-control" id="searchInput" placeholder="Search products...">
+                    </div>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="categoryFilter">
+                        <option value="">All Categories</option>
+                        <option value="seeds">Seeds & Plants</option>
+                        <option value="tools">Tools & Equipment</option>
+                        <option value="fertilizers">Fertilizers</option>
+                        <option value="produce">Fresh Produce</option>
+                        <option value="livestock">Livestock</option>
+                        <option value="machinery">Machinery</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="locationFilter">
+                        <option value="">All Locations</option>
+                        <option value="local">Local (50km)</option>
+                        <option value="regional">Regional</option>
+                        <option value="national">National</option>
+                        <option value="international">International</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <select class="form-select" id="sortFilter">
+                        <option value="newest">Newest First</option>
+                        <option value="price-low">Price: Low to High</option>
+                        <option value="price-high">Price: High to Low</option>
+                        <option value="popular">Most Popular</option>
+                    </select>
+                </div>
+                <div class="col-md-2">
+                    <div class="d-flex gap-2">
+                        <button class="btn btn-outline-primary" id="gridView" title="Grid View">
+                            <i class="fas fa-th"></i>
+                        </button>
+                        <button class="btn btn-outline-primary" id="listView" title="List View">
+                            <i class="fas fa-list"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Featured Categories -->
+    <section class="py-5">
+        <div class="container">
+            <h2 class="text-center mb-5">Browse by Category</h2>
+            <div class="row g-4">
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="category-card text-center" data-category="seeds">
+                        <div class="category-icon">
+                            <i class="fas fa-seedling"></i>
+                        </div>
+                        <h6>Seeds & Plants</h6>
+                        <small class="text-muted">342 items</small>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="category-card text-center" data-category="tools">
+                        <div class="category-icon">
+                            <i class="fas fa-tools"></i>
+                        </div>
+                        <h6>Tools & Equipment</h6>
+                        <small class="text-muted">189 items</small>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="category-card text-center" data-category="fertilizers">
+                        <div class="category-icon">
+                            <i class="fas fa-flask"></i>
+                        </div>
+                        <h6>Fertilizers</h6>
+                        <small class="text-muted">156 items</small>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="category-card text-center" data-category="produce">
+                        <div class="category-icon">
+                            <i class="fas fa-apple-alt"></i>
+                        </div>
+                        <h6>Fresh Produce</h6>
+                        <small class="text-muted">423 items</small>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="category-card text-center" data-category="livestock">
+                        <div class="category-icon">
+                            <i class="fas fa-horse"></i>
+                        </div>
+                        <h6>Livestock</h6>
+                        <small class="text-muted">78 items</small>
+                    </div>
+                </div>
+                <div class="col-md-2 col-sm-4 col-6">
+                    <div class="category-card text-center" data-category="machinery">
+                        <div class="category-icon">
+                            <i class="fas fa-tractor"></i>
+                        </div>
+                        <h6>Machinery</h6>
+                        <small class="text-muted">234 items</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Products Grid -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h3>Featured Products</h3>
+                <span class="text-muted" id="productCount">Showing 12 of 2,847 products</span>
+            </div>
+
+            <div class="product-grid" id="productsGrid">
+                <!-- Products will be loaded here -->
+            </div>
+
+            <!-- Load More Button -->
+            <div class="text-center mt-5">
+                <button class="btn btn-primary btn-lg" id="loadMoreBtn">
+                    <i class="fas fa-plus"></i> Load More Products
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sell Product Modal -->
+    <div class="modal fade" id="sellModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="fas fa-plus"></i> List Your Product</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="sellForm">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label">Product Name *</label>
+                                <input type="text" class="form-control" name="name" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Category *</label>
+                                <select class="form-select" name="category" required>
+                                    <option value="">Select Category</option>
+                                    <option value="seeds">Seeds & Plants</option>
+                                    <option value="tools">Tools & Equipment</option>
+                                    <option value="fertilizers">Fertilizers</option>
+                                    <option value="produce">Fresh Produce</option>
+                                    <option value="livestock">Livestock</option>
+                                    <option value="machinery">Machinery</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Price *</label>
+                                <div class="input-group">
+                                    <span class="input-group-text">$</span>
+                                    <input type="number" class="form-control" name="price" step="0.01" required>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Quantity</label>
+                                <input type="number" class="form-control" name="quantity" min="1">
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Description *</label>
+                                <textarea class="form-control" name="description" rows="3" required></textarea>
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Location</label>
+                                <input type="text" class="form-control" name="location" placeholder="City, State">
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label">Contact Method</label>
+                                <select class="form-select" name="contact">
+                                    <option value="platform">Through Platform</option>
+                                    <option value="email">Email</option>
+                                    <option value="phone">Phone</option>
+                                </select>
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label">Product Images</label>
+                                <input type="file" class="form-control" name="images" multiple accept="image/*">
+                                <small class="text-muted">Upload up to 5 images (max 5MB each)</small>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="button" class="btn btn-primary" id="submitProduct">
+                        <i class="fas fa-check"></i> List Product
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+    <style>
+        .category-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: var(--spacing-lg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .category-card:hover {
+            background: var(--primary-green);
+            color: white;
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .category-icon {
+            font-size: 2.5rem;
+            color: var(--primary-green);
+            margin-bottom: var(--spacing-md);
+            transition: color 0.3s ease;
+        }
+
+        .category-card:hover .category-icon {
+            color: white;
+        }
+
+        .product-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-xl);
+            overflow: hidden;
+            transition: all 0.3s ease;
+            height: 100%;
+        }
+
+        .product-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-xl);
+            border-color: var(--accent-green);
+        }
+
+        .product-image {
+            width: 100%;
+            height: 200px;
+            object-fit: cover;
+            background: var(--bg-tertiary);
+        }
+
+        .product-info {
+            padding: var(--spacing-lg);
+        }
+
+        .product-title {
+            font-weight: 600;
+            margin-bottom: var(--spacing-sm);
+            color: var(--text-primary);
+        }
+
+        .product-price {
+            font-size: var(--font-size-lg);
+            font-weight: 700;
+            color: var(--primary-green);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .product-description {
+            color: var(--text-muted);
+            font-size: var(--font-size-sm);
+            margin-bottom: var(--spacing-md);
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .product-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: var(--font-size-sm);
+            color: var(--text-muted);
+            margin-bottom: var(--spacing-md);
+        }
+
+        .product-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+
+        .btn-wishlist {
+            background: none;
+            border: 1px solid var(--border-color);
+            color: var(--text-muted);
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-lg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .btn-wishlist:hover {
+            background: var(--primary-green);
+            color: white;
+            border-color: var(--primary-green);
+        }
+
+        .btn-contact {
+            flex: 1;
+            background: var(--gradient-primary);
+            color: white;
+            border: none;
+            padding: var(--spacing-sm) var(--spacing-md);
+            border-radius: var(--radius-lg);
+            transition: all 0.3s ease;
+        }
+
+        .btn-contact:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+    </style>
+
+    <script>
+        class MarketplaceManager {
+            constructor() {
+                this.products = [];
+                this.filteredProducts = [];
+                this.currentPage = 1;
+                this.productsPerPage = 12;
+
+                this.initializeEventListeners();
+                this.loadProducts();
+            }
+
+            initializeEventListeners() {
+                // Search and filters
+                document.getElementById('searchInput').addEventListener('input', () => this.filterProducts());
+                document.getElementById('categoryFilter').addEventListener('change', () => this.filterProducts());
+                document.getElementById('locationFilter').addEventListener('change', () => this.filterProducts());
+                document.getElementById('sortFilter').addEventListener('change', () => this.sortProducts());
+
+                // View toggles
+                document.getElementById('gridView').addEventListener('click', () => this.setView('grid'));
+                document.getElementById('listView').addEventListener('click', () => this.setView('list'));
+
+                // Category cards
+                document.querySelectorAll('.category-card').forEach(card => {
+                    card.addEventListener('click', () => {
+                        const category = card.dataset.category;
+                        document.getElementById('categoryFilter').value = category;
+                        this.filterProducts();
+                        document.getElementById('browseBtn').scrollIntoView({ behavior: 'smooth' });
+                    });
+                });
+
+                // Load more button
+                document.getElementById('loadMoreBtn').addEventListener('click', () => this.loadMoreProducts());
+
+                // Sell product form
+                document.getElementById('submitProduct').addEventListener('click', () => this.submitProduct());
+            }
+
+            loadProducts() {
+                // Mock product data - in real app, fetch from API
+                this.products = [
+                    {
+                        id: 1,
+                        name: "Organic Tomato Seeds",
+                        category: "seeds",
+                        price: 12.99,
+                        location: "California, USA",
+                        description: "High-quality organic tomato seeds, perfect for home gardens and commercial farming.",
+                        image: "https://images.unsplash.com/photo-1592841200221-a6898f307baa?w=300&h=200&fit=crop",
+                        seller: "Green Farms Co.",
+                        rating: 4.8,
+                        inStock: true
+                    },
+                    {
+                        id: 2,
+                        name: "Professional Garden Hoe",
+                        category: "tools",
+                        price: 45.00,
+                        location: "Texas, USA",
+                        description: "Durable steel garden hoe with ergonomic wooden handle. Perfect for soil cultivation.",
+                        image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=300&h=200&fit=crop",
+                        seller: "Farm Tools Inc.",
+                        rating: 4.6,
+                        inStock: true
+                    },
+                    {
+                        id: 3,
+                        name: "Organic Fertilizer Mix",
+                        category: "fertilizers",
+                        price: 28.50,
+                        location: "Florida, USA",
+                        description: "All-natural organic fertilizer blend for vegetables and fruits. 20lb bag.",
+                        image: "https://images.unsplash.com/photo-1416879595882-3373a0480b5b?w=300&h=200&fit=crop",
+                        seller: "EcoGrow Solutions",
+                        rating: 4.9,
+                        inStock: true
+                    },
+                    {
+                        id: 4,
+                        name: "Fresh Organic Apples",
+                        category: "produce",
+                        price: 3.99,
+                        location: "Washington, USA",
+                        description: "Crisp, fresh organic apples. Perfect for eating fresh or cooking. 5lb bag.",
+                        image: "https://images.unsplash.com/photo-1560806887-1e4cd0b6cbd6?w=300&h=200&fit=crop",
+                        seller: "Orchard Fresh",
+                        rating: 4.7,
+                        inStock: true
+                    },
+                    {
+                        id: 5,
+                        name: "Compact Tractor",
+                        category: "machinery",
+                        price: 15999.99,
+                        location: "Iowa, USA",
+                        description: "Used compact tractor in excellent condition. 45HP, 4WD, with loader attachment.",
+                        image: "https://images.unsplash.com/photo-1544197150-b99a580bb7a8?w=300&h=200&fit=crop",
+                        seller: "Midwest Machinery",
+                        rating: 4.5,
+                        inStock: true
+                    },
+                    {
+                        id: 6,
+                        name: "Heritage Corn Seeds",
+                        category: "seeds",
+                        price: 8.75,
+                        location: "Nebraska, USA",
+                        description: "Non-GMO heritage corn seeds. Great for sweet corn production.",
+                        image: "https://images.unsplash.com/photo-1551754655-cd27e38d2076?w=300&h=200&fit=crop",
+                        seller: "Heritage Seeds Co.",
+                        rating: 4.8,
+                        inStock: true
+                    }
+                ];
+
+                this.filteredProducts = [...this.products];
+                this.renderProducts();
+            }
+
+            filterProducts() {
+                const search = document.getElementById('searchInput').value.toLowerCase();
+                const category = document.getElementById('categoryFilter').value;
+                const location = document.getElementById('locationFilter').value;
+
+                this.filteredProducts = this.products.filter(product => {
+                    const matchesSearch = product.name.toLowerCase().includes(search) ||
+                                        product.description.toLowerCase().includes(search);
+                    const matchesCategory = !category || product.category === category;
+                    const matchesLocation = !location || this.matchesLocationFilter(product.location, location);
+
+                    return matchesSearch && matchesCategory && matchesLocation;
+                });
+
+                this.sortProducts();
+                this.renderProducts();
+            }
+
+            matchesLocationFilter(productLocation, filter) {
+                // Simple location matching - in real app, use geolocation
+                switch(filter) {
+                    case 'local': return productLocation.includes('USA');
+                    case 'regional': return productLocation.includes('USA');
+                    case 'national': return productLocation.includes('USA');
+                    case 'international': return true;
+                    default: return true;
+                }
+            }
+
+            sortProducts() {
+                const sortBy = document.getElementById('sortFilter').value;
+
+                this.filteredProducts.sort((a, b) => {
+                    switch(sortBy) {
+                        case 'price-low': return a.price - b.price;
+                        case 'price-high': return b.price - a.price;
+                        case 'popular': return b.rating - a.rating;
+                        case 'newest':
+                        default: return b.id - a.id;
+                    }
+                });
+            }
+
+            renderProducts() {
+                const grid = document.getElementById('productsGrid');
+                const productsToShow = this.filteredProducts.slice(0, this.currentPage * this.productsPerPage);
+
+                grid.innerHTML = productsToShow.map(product => this.createProductCard(product)).join('');
+
+                // Update product count
+                document.getElementById('productCount').textContent =
+                    `Showing ${productsToShow.length} of ${this.filteredProducts.length} products`;
+
+                // Show/hide load more button
+                const loadMoreBtn = document.getElementById('loadMoreBtn');
+                loadMoreBtn.style.display =
+                    productsToShow.length < this.filteredProducts.length ? 'block' : 'none';
+            }
+
+            createProductCard(product) {
+                return `
+                    <div class="product-card">
+                        <img src="${product.image}" alt="${product.name}" class="product-image">
+                        <div class="product-info">
+                            <h5 class="product-title">${product.name}</h5>
+                            <div class="product-price">$${product.price.toFixed(2)}</div>
+                            <p class="product-description">${product.description}</p>
+                            <div class="product-meta">
+                                <span><i class="fas fa-map-marker-alt"></i> ${product.location}</span>
+                                <span><i class="fas fa-star text-warning"></i> ${product.rating}</span>
+                            </div>
+                            <div class="product-actions">
+                                <button class="btn-wishlist" title="Add to wishlist">
+                                    <i class="fas fa-heart"></i>
+                                </button>
+                                <button class="btn-contact">
+                                    <i class="fas fa-envelope"></i> Contact Seller
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            }
+
+            loadMoreProducts() {
+                this.currentPage++;
+                this.renderProducts();
+            }
+
+            setView(viewType) {
+                const grid = document.getElementById('productsGrid');
+                if (viewType === 'list') {
+                    grid.classList.add('list-view');
+                } else {
+                    grid.classList.remove('list-view');
+                }
+
+                // Update button states
+                document.getElementById('gridView').classList.toggle('active', viewType === 'grid');
+                document.getElementById('listView').classList.toggle('active', viewType === 'list');
+            }
+
+            submitProduct() {
+                const form = document.getElementById('sellForm');
+                const formData = new FormData(form);
+
+                // Basic validation
+                if (!formData.get('name') || !formData.get('category') || !formData.get('price')) {
+                    alert('Please fill in all required fields.');
+                    return;
+                }
+
+                // In real app, submit to backend
+                alert('Product listing submitted successfully! It will be reviewed and published soon.');
+
+                // Close modal and reset form
+                bootstrap.Modal.getInstance(document.getElementById('sellModal')).hide();
+                form.reset();
+            }
+        }
+
+        // Initialize marketplace when page loads
+        document.addEventListener('DOMContentLoaded', () => {
+            window.marketplace = new MarketplaceManager();
+        });
+    </script>
+</body>
+</html>
