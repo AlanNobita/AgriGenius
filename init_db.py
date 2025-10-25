@@ -12,7 +12,7 @@ from werkzeug.security import generate_password_hash
 # Add the current directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app import app, db, User, Article, Documentation
+from app import app, db, User, Article, Documentation, Conversation, ChatMessage, UserMemory
 
 
 def init_database():

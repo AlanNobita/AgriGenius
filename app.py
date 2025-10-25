@@ -6,6 +6,9 @@ from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
 import random
 import logging
+import requests
+import json
+from datetime import datetime
 from dotenv import load_dotenv
 from sensors.sensors import get_sensor_data
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -19,6 +22,11 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
 app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///farmgenius.db')
 app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# OpenRouter API Configuration
+OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', 'your-openrouter-api-key-here')
+OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'anthropic/claude-3-haiku')  # Default model
+OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -65,6 +73,39 @@ class Documentation(db.Model):
     content = db.Column(db.Text, nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     verified = db.Column(db.Boolean, default=False)  # Admin verification
+
+# Conversation model for chat history
+class Conversation(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Nullable for anonymous users
+    session_id = db.Column(db.String(100), nullable=False)  # For anonymous users
+    title = db.Column(db.String(200), nullable=False, default='New Chat')
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    is_active = db.Column(db.Boolean, default=True)
+    user = db.relationship('User', backref=db.backref('conversations', lazy=True))
+
+# Message model for individual chat messages
+class ChatMessage(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=False)
+    role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
+    content = db.Column(db.Text, nullable=False)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    sensor_data = db.Column(db.Text, nullable=True)  # JSON string of sensor data
+    conversation = db.relationship('Conversation', backref=db.backref('messages', lazy=True, order_by='ChatMessage.timestamp'))
+
+# User memory model for AI to remember user preferences and data
+class UserMemory(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    session_id = db.Column(db.String(100), nullable=True)  # For anonymous users
+    memory_type = db.Column(db.String(50), nullable=False)  # 'preference', 'farm_data', 'crop_info', etc.
+    key = db.Column(db.String(100), nullable=False)
+    value = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user = db.relationship('User', backref=db.backref('memories', lazy=True))
 
 @login_manager.user_loader
 def load_user(user_id):
@@ -366,34 +407,550 @@ def logout():
     logout_user()
     return redirect(url_for('home'))
 
-# Chatbot route
+# Chatbot routes
 @app.route('/chat')
 def chat():
     return render_template('chat.html')
 
-@app.route('/get_response', methods=['POST'])
-@csrf.exempt  # Exempt chatbot endpoint from CSRF protection
-def get_response():
+@app.route('/chat/<conversation_id>')
+def chat_conversation(conversation_id):
+    return render_template('chat.html', conversation_id=conversation_id)
+
+# Get user's conversation history
+@app.route('/api/conversations', methods=['GET'])
+@csrf.exempt
+def get_conversations():
     try:
-        user_input = request.json.get("message", "").strip()
+        user_id = current_user.id if current_user.is_authenticated else None
+        session_id = session.get('chat_session_id')
+
+        if user_id:
+            conversations = Conversation.query.filter_by(user_id=user_id, is_active=True).order_by(Conversation.updated_at.desc()).all()
+        elif session_id:
+            conversations = Conversation.query.filter_by(session_id=session_id, is_active=True).order_by(Conversation.updated_at.desc()).all()
+        else:
+            return jsonify({"conversations": []})
+
+        conv_list = []
+        for conv in conversations:
+            conv_list.append({
+                "id": conv.id,
+                "title": conv.title,
+                "created_at": conv.created_at.isoformat(),
+                "updated_at": conv.updated_at.isoformat(),
+                "message_count": len(conv.messages)
+            })
+
+        return jsonify({"conversations": conv_list})
+
+    except Exception as e:
+        app.logger.error(f'Error fetching conversations: {str(e)}')
+        return jsonify({"error": "Failed to fetch conversations"}), 500
+
+# Get messages for a specific conversation
+@app.route('/api/conversations/<int:conversation_id>/messages', methods=['GET'])
+@csrf.exempt
+def get_conversation_messages(conversation_id):
+    try:
+        conversation = Conversation.query.get_or_404(conversation_id)
+
+        # Check if user has access to this conversation
+        user_id = current_user.id if current_user.is_authenticated else None
+        session_id = session.get('chat_session_id')
+
+        if not ((user_id and conversation.user_id == user_id) or
+                (session_id and conversation.session_id == session_id)):
+            return jsonify({"error": "Access denied"}), 403
+
+        messages = []
+        for msg in conversation.messages:
+            message_data = {
+                "id": msg.id,
+                "role": msg.role,
+                "content": msg.content,
+                "timestamp": msg.timestamp.isoformat()
+            }
+            if msg.sensor_data:
+                message_data["sensor_data"] = json.loads(msg.sensor_data)
+            messages.append(message_data)
+
+        return jsonify({
+            "conversation": {
+                "id": conversation.id,
+                "title": conversation.title,
+                "messages": messages
+            }
+        })
+
+    except Exception as e:
+        app.logger.error(f'Error fetching conversation messages: {str(e)}')
+        return jsonify({"error": "Failed to fetch messages"}), 500
+
+# Main AI chat endpoint
+@app.route('/api/chat', methods=['POST'])
+@csrf.exempt
+def ai_chat():
+    try:
+        data = request.json
+        user_input = data.get("message", "").strip()
+        conversation_id = data.get("conversation_id")
+
         if not user_input:
             return jsonify({"error": "No message provided"}), 400
+
+        # Get or create session ID for anonymous users
+        if not session.get('chat_session_id'):
+            import uuid
+            session['chat_session_id'] = str(uuid.uuid4())
+
+        user_id = current_user.id if current_user.is_authenticated else None
+        session_id = session.get('chat_session_id')
+
+        # Get or create conversation
+        if conversation_id:
+            conversation = Conversation.query.get(conversation_id)
+            if not conversation:
+                return jsonify({"error": "Conversation not found"}), 404
+        else:
+            # Create new conversation
+            conversation = Conversation(
+                user_id=user_id,
+                session_id=session_id,
+                title=generate_conversation_title(user_input)
+            )
+            db.session.add(conversation)
+            db.session.flush()  # Get the ID
 
         # Get current sensor data
         sensor_data = get_sensor_data()
 
-        # Simple chatbot logic based on keywords
-        response = generate_chatbot_response(user_input, sensor_data)
+        # Save user message
+        user_message = ChatMessage(
+            conversation_id=conversation.id,
+            role='user',
+            content=user_input,
+            sensor_data=json.dumps(sensor_data)
+        )
+        db.session.add(user_message)
+
+        # Get user memory for context
+        user_memory = get_user_memory(user_id, session_id)
+
+        # Generate AI response
+        ai_response = generate_ai_response(user_input, sensor_data, conversation, user_memory)
+
+        # Save AI message
+        ai_message = ChatMessage(
+            conversation_id=conversation.id,
+            role='assistant',
+            content=ai_response,
+            sensor_data=json.dumps(sensor_data)
+        )
+        db.session.add(ai_message)
+
+        # Update conversation timestamp
+        conversation.updated_at = datetime.utcnow()
+
+        # Extract and save any new user information
+        extract_and_save_user_info(user_input, ai_response, user_id, session_id)
+
+        db.session.commit()
 
         return jsonify({
-            "response": response,
+            "response": ai_response,
+            "conversation_id": conversation.id,
+            "message_id": ai_message.id,
             "sensor_data": sensor_data,
-            "timestamp": sensor_data.get('timestamp')
+            "timestamp": ai_message.timestamp.isoformat()
         })
 
     except Exception as e:
-        app.logger.error(f'Chatbot error: {str(e)}')
+        db.session.rollback()
+        app.logger.error(f'AI Chat error: {str(e)}')
         return jsonify({"error": "Sorry, I'm having trouble right now. Please try again later."}), 500
+
+# Delete conversation
+@app.route('/api/conversations/<int:conversation_id>', methods=['DELETE'])
+@csrf.exempt
+def delete_conversation(conversation_id):
+    try:
+        conversation = Conversation.query.get_or_404(conversation_id)
+
+        # Check if user has access to this conversation
+        user_id = current_user.id if current_user.is_authenticated else None
+        session_id = session.get('chat_session_id')
+
+        if not ((user_id and conversation.user_id == user_id) or
+                (session_id and conversation.session_id == session_id)):
+            return jsonify({"error": "Access denied"}), 403
+
+        conversation.is_active = False
+        db.session.commit()
+
+        return jsonify({"success": True})
+
+    except Exception as e:
+        app.logger.error(f'Error deleting conversation: {str(e)}')
+        return jsonify({"error": "Failed to delete conversation"}), 500
+
+# Helper functions for AI chatbot
+def generate_conversation_title(first_message):
+    """Generate a title for the conversation based on the first message"""
+    # Simple title generation - in production, you might use AI for this
+    words = first_message.split()[:5]  # First 5 words
+    title = ' '.join(words)
+    if len(title) > 50:
+        title = title[:47] + "..."
+    return title or "New Chat"
+
+def get_user_memory(user_id, session_id):
+    """Get user memory for context"""
+    try:
+        if user_id:
+            memories = UserMemory.query.filter_by(user_id=user_id).all()
+        elif session_id:
+            memories = UserMemory.query.filter_by(session_id=session_id).all()
+        else:
+            return {}
+
+        memory_dict = {}
+        for memory in memories:
+            if memory.memory_type not in memory_dict:
+                memory_dict[memory.memory_type] = {}
+            memory_dict[memory.memory_type][memory.key] = memory.value
+
+        return memory_dict
+    except Exception as e:
+        app.logger.error(f'Error getting user memory: {str(e)}')
+        return {}
+
+def save_user_memory(user_id, session_id, memory_type, key, value):
+    """Save user memory"""
+    try:
+        # Check if memory already exists
+        if user_id:
+            memory = UserMemory.query.filter_by(user_id=user_id, memory_type=memory_type, key=key).first()
+        else:
+            memory = UserMemory.query.filter_by(session_id=session_id, memory_type=memory_type, key=key).first()
+
+        if memory:
+            memory.value = value
+            memory.updated_at = datetime.utcnow()
+        else:
+            memory = UserMemory(
+                user_id=user_id,
+                session_id=session_id,
+                memory_type=memory_type,
+                key=key,
+                value=value
+            )
+            db.session.add(memory)
+
+        db.session.commit()
+    except Exception as e:
+        app.logger.error(f'Error saving user memory: {str(e)}')
+
+def extract_and_save_user_info(user_input, ai_response, user_id, session_id):
+    """Extract and save user information from conversation"""
+    try:
+        user_lower = user_input.lower()
+
+        # Extract farm information
+        if any(word in user_lower for word in ['my farm', 'i grow', 'i have', 'my crop']):
+            if 'tomato' in user_lower:
+                save_user_memory(user_id, session_id, 'crops', 'tomatoes', 'true')
+            if 'corn' in user_lower:
+                save_user_memory(user_id, session_id, 'crops', 'corn', 'true')
+            if 'wheat' in user_lower:
+                save_user_memory(user_id, session_id, 'crops', 'wheat', 'true')
+
+        # Extract location information
+        if any(word in user_lower for word in ['i am in', 'located in', 'from']):
+            # Simple location extraction - in production, use NLP
+            words = user_input.split()
+            for i, word in enumerate(words):
+                if word.lower() in ['in', 'from'] and i + 1 < len(words):
+                    location = words[i + 1].strip('.,!?')
+                    save_user_memory(user_id, session_id, 'location', 'region', location)
+                    break
+
+        # Extract farm size
+        if any(word in user_lower for word in ['acre', 'hectare', 'square']):
+            # Extract farm size information
+            import re
+            size_match = re.search(r'(\d+(?:\.\d+)?)\s*(acre|hectare|sq)', user_lower)
+            if size_match:
+                size = size_match.group(1)
+                unit = size_match.group(2)
+                save_user_memory(user_id, session_id, 'farm_info', 'size', f"{size} {unit}")
+
+    except Exception as e:
+        app.logger.error(f'Error extracting user info: {str(e)}')
+
+def generate_ai_response(user_input, sensor_data, conversation, user_memory):
+    """Generate AI response using OpenRouter API or fallback to local logic"""
+    try:
+        # Debug logging
+        app.logger.info(f'API Key present: {bool(OPENROUTER_API_KEY)}')
+        app.logger.info(f'API Key value: {OPENROUTER_API_KEY[:20]}...' if OPENROUTER_API_KEY else 'None')
+        app.logger.info(f'Model: {OPENROUTER_MODEL}')
+
+        # Try OpenRouter API first
+        if OPENROUTER_API_KEY and OPENROUTER_API_KEY != 'your-openrouter-api-key-here':
+            app.logger.info('Attempting OpenRouter API call...')
+            return call_openrouter_api(user_input, sensor_data, conversation, user_memory)
+        else:
+            app.logger.info('Using local response generation (no valid API key)')
+            # Fallback to enhanced local logic
+            return generate_local_response(user_input, sensor_data, user_memory)
+    except Exception as e:
+        app.logger.error(f'Error generating AI response: {str(e)}')
+        return generate_local_response(user_input, sensor_data, user_memory)
+
+def call_openrouter_api(user_input, sensor_data, conversation, user_memory):
+    """Call OpenRouter API for AI response"""
+    try:
+        app.logger.info(f'Building API request for model: {OPENROUTER_MODEL}')
+
+        # Build conversation history for context
+        messages = [
+            {
+                "role": "system",
+                "content": build_system_prompt(sensor_data, user_memory)
+            }
+        ]
+
+        # Add recent conversation history (last 10 messages)
+        recent_messages = conversation.messages[-10:] if conversation.messages else []
+        for msg in recent_messages:
+            messages.append({
+                "role": msg.role,
+                "content": msg.content
+            })
+
+        # Add current user message
+        messages.append({
+            "role": "user",
+            "content": user_input
+        })
+
+        app.logger.info(f'Sending {len(messages)} messages to API')
+
+        # Prepare API request
+        headers = {
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://agri-genius.com",  # Optional
+            "X-Title": "AgriGenius AI Assistant"  # Optional
+        }
+
+        payload = {
+            "model": OPENROUTER_MODEL,
+            "messages": messages,
+            "max_tokens": 1000,
+            "temperature": 0.7,
+            "top_p": 0.9,
+            "frequency_penalty": 0.1,
+            "presence_penalty": 0.1
+        }
+
+        app.logger.info(f'Making API call to: {OPENROUTER_BASE_URL}')
+
+        # Make API call
+        response = requests.post(
+            OPENROUTER_BASE_URL,
+            headers=headers,
+            json=payload,
+            timeout=30
+        )
+
+        app.logger.info(f'API response status: {response.status_code}')
+
+        if response.status_code == 200:
+            result = response.json()
+            ai_response = result['choices'][0]['message']['content']
+
+            # Log API usage
+            app.logger.info(f'OpenRouter API call successful. Model: {OPENROUTER_MODEL}')
+            app.logger.info(f'Response length: {len(ai_response)} characters')
+
+            return ai_response
+        else:
+            app.logger.error(f'OpenRouter API error: {response.status_code} - {response.text}')
+            raise Exception(f"API call failed with status {response.status_code}")
+
+    except Exception as e:
+        app.logger.error(f'OpenRouter API call failed: {str(e)}')
+        raise e
+
+def build_system_prompt(sensor_data, user_memory):
+    """Build system prompt with context"""
+    prompt = """You are AgriGenius AI, an expert agricultural assistant. You help farmers optimize their operations with intelligent advice based on real-time data and agricultural best practices.
+
+CURRENT SENSOR DATA:
+"""
+
+    if sensor_data.get('status') != 'error':
+        prompt += f"""
+- Temperature: {sensor_data.get('temperature', 'N/A')}°C
+- Humidity: {sensor_data.get('humidity', 'N/A')}%
+- Soil Moisture: {sensor_data.get('soil_moisture', 'N/A')}%
+- pH Level: {sensor_data.get('ph_level', 'N/A')}
+- Light Intensity: {sensor_data.get('light_intensity', 'N/A')} lux
+- Nitrogen: {sensor_data.get('nitrogen', 'N/A')} ppm
+- Phosphorus: {sensor_data.get('phosphorus', 'N/A')} ppm
+- Potassium: {sensor_data.get('potassium', 'N/A')} ppm
+"""
+    else:
+        prompt += "- Sensor data currently unavailable\n"
+
+    # Add user memory context
+    if user_memory:
+        prompt += "\nUSER CONTEXT:\n"
+        if 'crops' in user_memory:
+            crops = list(user_memory['crops'].keys())
+            prompt += f"- Grows: {', '.join(crops)}\n"
+        if 'location' in user_memory:
+            location = user_memory['location'].get('region', '')
+            prompt += f"- Location: {location}\n"
+        if 'farm_info' in user_memory:
+            size = user_memory['farm_info'].get('size', '')
+            if size:
+                prompt += f"- Farm size: {size}\n"
+
+    prompt += """
+INSTRUCTIONS:
+- Provide practical, actionable agricultural advice
+- Reference current sensor data when relevant
+- Be concise but comprehensive
+- Use emojis sparingly for better readability
+- Remember user's context and previous conversations
+- If sensor data shows concerning values, prioritize addressing those issues
+- Always consider safety and best practices
+- Provide specific recommendations with reasoning
+
+Respond as a knowledgeable agricultural expert who cares about the farmer's success."""
+
+    return prompt
+
+def generate_local_response(user_input, sensor_data, user_memory):
+    """Enhanced local response generation with user memory"""
+    user_input_lower = user_input.lower()
+
+    # Get user context
+    user_crops = list(user_memory.get('crops', {}).keys()) if user_memory.get('crops') else []
+    user_location = user_memory.get('location', {}).get('region', '') if user_memory.get('location') else ''
+
+    # Personalized greeting
+    if any(word in user_input_lower for word in ['hello', 'hi', 'hey', 'greetings']):
+        greeting = "Hello! I'm your AgriGenius AI assistant. "
+        if user_crops:
+            greeting += f"I see you grow {', '.join(user_crops)}. "
+        if user_location:
+            greeting += f"How are things on your farm in {user_location}? "
+        greeting += "How can I help you today?"
+        return greeting
+
+    # Sensor data with personalized context
+    elif any(word in user_input_lower for word in ['sensor', 'data', 'reading', 'current conditions']):
+        if sensor_data.get('status') == 'error':
+            return "I'm sorry, but there seems to be an issue with the sensor data right now. Please check the sensor connections."
+
+        response = "📊 **Current Farm Conditions**\n\n"
+
+        temp = sensor_data.get('temperature', 'N/A')
+        humidity = sensor_data.get('humidity', 'N/A')
+        soil_moisture = sensor_data.get('soil_moisture', 'N/A')
+        ph = sensor_data.get('ph_level', 'N/A')
+
+        # Add status indicators
+        temp_status = "🟢 Optimal" if 20 <= temp <= 30 else "🟡 Monitor" if 15 <= temp <= 35 else "🔴 Alert"
+        humidity_status = "🟢 Good" if 40 <= humidity <= 70 else "🟡 Watch" if 30 <= humidity <= 80 else "🔴 Concern"
+        soil_status = "🟢 Good" if 40 <= soil_moisture <= 70 else "🟡 Check" if 25 <= soil_moisture <= 80 else "🔴 Action Needed"
+
+        response += f"🌡️ **Temperature**: {temp}°C {temp_status}\n"
+        response += f"💧 **Humidity**: {humidity}% {humidity_status}\n"
+        response += f"🌱 **Soil Moisture**: {soil_moisture}% {soil_status}\n"
+        response += f"⚗️ **pH Level**: {ph}\n"
+
+        # Add crop-specific advice if user grows specific crops
+        if user_crops:
+            response += f"\n**For your {', '.join(user_crops)}:**\n"
+            for crop in user_crops:
+                if crop == 'tomatoes' and temp > 30:
+                    response += "• Tomatoes may need shade in this heat\n"
+                elif crop == 'lettuce' and temp > 25:
+                    response += "• Lettuce prefers cooler conditions - consider shade cloth\n"
+
+        return response
+
+    # Enhanced watering advice with memory
+    elif any(word in user_input_lower for word in ['water', 'irrigation', 'watering']):
+        soil_moisture = sensor_data.get('soil_moisture', 50)
+        temp = sensor_data.get('temperature', 25)
+
+        response = f"💧 **Watering Analysis**\n\n"
+        response += f"Current soil moisture: {soil_moisture}%\n"
+        response += f"Temperature: {temp}°C\n"
+
+        if user_crops:
+            response += f"Crops: {', '.join(user_crops)}\n"
+
+        if soil_moisture < 30:
+            urgency = "🔴 **URGENT**" if soil_moisture < 20 else "🟡 **SOON**"
+            response += f"\n{urgency} - Watering needed!\n\n"
+            response += "**Recommendations:**\n"
+            response += "• Water immediately to prevent plant stress\n"
+            response += "• Water early morning (6-8 AM) or evening (6-8 PM)\n"
+
+            if 'tomatoes' in user_crops:
+                response += "• Tomatoes need consistent moisture - avoid letting soil dry out\n"
+            if 'lettuce' in user_crops:
+                response += "• Lettuce needs frequent, light watering\n"
+
+        elif soil_moisture > 70:
+            response += "\n🟡 **Hold off** - Soil is quite moist\n\n"
+            response += "**Recommendations:**\n"
+            response += "• Skip watering to prevent root rot\n"
+            response += "• Ensure good drainage\n"
+            response += "• Monitor for overwatering signs\n"
+        else:
+            response += "\n🟢 **Optimal** - Soil moisture is good\n\n"
+            response += "**Recommendations:**\n"
+            response += "• Continue current watering schedule\n"
+            response += "• Water when moisture drops below 30%\n"
+
+        return response
+
+    # Default response with personalization
+    else:
+        response = "🤖 **AgriGenius AI Assistant**\n\n"
+
+        if user_crops or user_location:
+            response += "I remember you"
+            if user_crops:
+                response += f" grow {', '.join(user_crops)}"
+            if user_location:
+                response += f" in {user_location}"
+            response += ". "
+
+        response += "I can help you with:\n\n"
+        response += "• 📊 **Sensor Data & Analysis**\n"
+        response += "• 💧 **Irrigation & Watering**\n"
+        response += "• 🧪 **Fertilizers & Nutrients**\n"
+        response += "• 🛡️ **Disease & Pest Prevention**\n"
+        response += "• 🌤️ **Weather & Climate**\n"
+        response += "• 🌾 **Crop-Specific Guidance**\n\n"
+
+        response += "**Try asking:**\n"
+        response += "• 'What are my current sensor readings?'\n"
+        response += "• 'When should I water my plants?'\n"
+        response += "• 'What fertilizer should I use?'\n"
+
+        if user_crops:
+            response += f"• 'How to care for my {user_crops[0]}?'\n"
+
+        return response
 
 def generate_chatbot_response(user_input, sensor_data):
     """Generate chatbot response based on user input and sensor data"""
