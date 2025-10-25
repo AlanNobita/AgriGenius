@@ -4,11 +4,10 @@ import os
 from flask import Flask, render_template, redirect, url_for, request, jsonify, flash, session
 from flask_sqlalchemy import SQLAlchemy
 from flask_wtf.csrf import CSRFProtect
-import random
 import logging
 import requests
 import json
-from datetime import datetime
+from datetime import datetime, timezone
 from dotenv import load_dotenv
 from sensors.sensors import get_sensor_data
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
@@ -25,7 +24,10 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 # OpenRouter API Configuration
 OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', 'your-openrouter-api-key-here')
-OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'anthropic/claude-3-haiku')  # Default model
+# Force reload environment variables
+from dotenv import load_dotenv
+load_dotenv(override=True)
+OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'meta-llama/llama-4-maverick:free')  # Default model
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Initialize extensions
@@ -80,8 +82,8 @@ class Conversation(db.Model):
     user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)  # Nullable for anonymous users
     session_id = db.Column(db.String(100), nullable=False)  # For anonymous users
     title = db.Column(db.String(200), nullable=False, default='New Chat')
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     is_active = db.Column(db.Boolean, default=True)
     user = db.relationship('User', backref=db.backref('conversations', lazy=True))
 
@@ -91,7 +93,7 @@ class ChatMessage(db.Model):
     conversation_id = db.Column(db.Integer, db.ForeignKey('conversation.id'), nullable=False)
     role = db.Column(db.String(20), nullable=False)  # 'user' or 'assistant'
     content = db.Column(db.Text, nullable=False)
-    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+    timestamp = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
     sensor_data = db.Column(db.Text, nullable=True)  # JSON string of sensor data
     conversation = db.relationship('Conversation', backref=db.backref('messages', lazy=True, order_by='ChatMessage.timestamp'))
 
@@ -103,8 +105,8 @@ class UserMemory(db.Model):
     memory_type = db.Column(db.String(50), nullable=False)  # 'preference', 'farm_data', 'crop_info', etc.
     key = db.Column(db.String(100), nullable=False)
     value = db.Column(db.Text, nullable=False)
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
-    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     user = db.relationship('User', backref=db.backref('memories', lazy=True))
 
 @login_manager.user_loader
@@ -549,10 +551,10 @@ def ai_chat():
         db.session.add(ai_message)
 
         # Update conversation timestamp
-        conversation.updated_at = datetime.utcnow()
+        conversation.updated_at = datetime.now(timezone.utc)
 
         # Extract and save any new user information
-        extract_and_save_user_info(user_input, ai_response, user_id, session_id)
+        extract_and_save_user_info(user_input, user_id, session_id)
 
         db.session.commit()
 
@@ -635,7 +637,7 @@ def save_user_memory(user_id, session_id, memory_type, key, value):
 
         if memory:
             memory.value = value
-            memory.updated_at = datetime.utcnow()
+            memory.updated_at = datetime.now(timezone.utc)
         else:
             memory = UserMemory(
                 user_id=user_id,
@@ -650,7 +652,7 @@ def save_user_memory(user_id, session_id, memory_type, key, value):
     except Exception as e:
         app.logger.error(f'Error saving user memory: {str(e)}')
 
-def extract_and_save_user_info(user_input, ai_response, user_id, session_id):
+def extract_and_save_user_info(user_input, user_id, session_id):
     """Extract and save user information from conversation"""
     try:
         user_lower = user_input.lower()
@@ -775,6 +777,10 @@ def call_openrouter_api(user_input, sensor_data, conversation, user_memory):
             app.logger.info(f'Response length: {len(ai_response)} characters')
 
             return ai_response
+        elif response.status_code == 404:
+            # Model not found, try fallback models
+            app.logger.warning(f'Model {OPENROUTER_MODEL} not available (404), trying fallback models')
+            return try_fallback_models(payload, headers)
         else:
             app.logger.error(f'OpenRouter API error: {response.status_code} - {response.text}')
             raise Exception(f"API call failed with status {response.status_code}")
@@ -782,6 +788,43 @@ def call_openrouter_api(user_input, sensor_data, conversation, user_memory):
     except Exception as e:
         app.logger.error(f'OpenRouter API call failed: {str(e)}')
         raise e
+
+def try_fallback_models(payload, headers):
+    """Try fallback models when primary model fails"""
+    fallback_models = [
+        'meta-llama/llama-3.2-1b-instruct:free',
+        'microsoft/phi-3-mini-128k-instruct:free',
+        'google/gemma-2-9b-it:free',
+        'qwen/qwen-2-7b-instruct:free'
+    ]
+
+    for model in fallback_models:
+        try:
+            app.logger.info(f'Trying fallback model: {model}')
+            payload['model'] = model
+
+            response = requests.post(
+                OPENROUTER_BASE_URL,
+                headers=headers,
+                json=payload,
+                timeout=30
+            )
+
+            if response.status_code == 200:
+                result = response.json()
+                ai_response = result['choices'][0]['message']['content']
+                app.logger.info(f'Fallback model {model} successful')
+                return ai_response
+            else:
+                app.logger.warning(f'Fallback model {model} failed with status {response.status_code}')
+                continue
+
+        except Exception as e:
+            app.logger.warning(f'Fallback model {model} error: {str(e)}')
+            continue
+
+    # If all fallback models fail, raise exception
+    raise Exception("All models failed, including fallbacks")
 
 def build_system_prompt(sensor_data, user_memory):
     """Build system prompt with context"""
