@@ -1,0 +1,300 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Add Product - AgriGenius Marketplace</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    
+    <style>
+        .add-product-hero {
+            background: linear-gradient(135deg, var(--primary-green), var(--accent-green));
+            color: white;
+            padding: 3rem 0;
+            text-align: center;
+        }
+        
+        .product-form {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .upload-area {
+            border: 2px dashed var(--border-color);
+            border-radius: var(--radius-lg);
+            padding: 3rem;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        
+        .upload-area:hover {
+            border-color: var(--primary-green);
+            background: var(--bg-tertiary);
+        }
+        
+        .upload-area.dragover {
+            border-color: var(--primary-green);
+            background: var(--light-green);
+        }
+        
+        .image-preview {
+            max-width: 200px;
+            max-height: 200px;
+            border-radius: var(--radius-md);
+            margin-top: 1rem;
+        }
+        
+        .form-section {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .section-title {
+            color: var(--primary-green);
+            font-weight: 600;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+    
+    <!-- Hero Section -->
+    <div class="add-product-hero">
+        <div class="container">
+            <h1 class="display-5 fw-bold mb-3">
+                <i class="fas fa-plus-circle me-3"></i>
+                Add New Product
+            </h1>
+            <p class="lead">List your agricultural products and reach potential buyers</p>
+        </div>
+    </div>
+    
+    <div class="container my-5">
+        <div class="row justify-content-center">
+            <div class="col-lg-8">
+                <!-- Flash Messages -->
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        {% for message in messages %}
+                            <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                                {{ message }}
+                                <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <!-- Product Form -->
+                <div class="product-form">
+                    <form method="POST" enctype="multipart/form-data" id="productForm">
+                        <!-- Basic Information -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-info-circle"></i>
+                                Basic Information
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-8 mb-3">
+                                    <label for="name" class="form-label">Product Name *</label>
+                                    <input type="text" class="form-control" id="name" name="name" 
+                                           placeholder="Enter product name" required>
+                                </div>
+                                <div class="col-md-4 mb-3">
+                                    <label for="category" class="form-label">Category *</label>
+                                    <select class="form-select" id="category" name="category" required>
+                                        <option value="">Select Category</option>
+                                        <option value="Seeds">Seeds</option>
+                                        <option value="Fertilizers">Fertilizers</option>
+                                        <option value="Equipment">Equipment</option>
+                                        <option value="Tools">Tools</option>
+                                        <option value="Livestock">Livestock</option>
+                                        <option value="Crops">Crops</option>
+                                        <option value="Machinery">Machinery</option>
+                                        <option value="Services">Services</option>
+                                        <option value="Other">Other</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="description" class="form-label">Product Description *</label>
+                                <textarea class="form-control" id="description" name="description" 
+                                          rows="4" placeholder="Describe your product in detail..." required></textarea>
+                                <div class="form-text">Provide detailed information about your product to attract buyers.</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Pricing & Inventory -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-dollar-sign"></i>
+                                Pricing & Inventory
+                            </h5>
+                            
+                            <div class="row">
+                                <div class="col-md-6 mb-3">
+                                    <label for="price" class="form-label">Price (USD) *</label>
+                                    <div class="input-group">
+                                        <span class="input-group-text">$</span>
+                                        <input type="number" class="form-control" id="price" name="price" 
+                                               step="0.01" min="0" placeholder="0.00" required>
+                                    </div>
+                                </div>
+                                <div class="col-md-6 mb-3">
+                                    <label for="stock_quantity" class="form-label">Stock Quantity *</label>
+                                    <input type="number" class="form-control" id="stock_quantity" name="stock_quantity" 
+                                           min="1" placeholder="1" required>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Product Image -->
+                        <div class="form-section">
+                            <h5 class="section-title">
+                                <i class="fas fa-image"></i>
+                                Product Image
+                            </h5>
+                            
+                            <div class="upload-area" id="uploadArea">
+                                <i class="fas fa-cloud-upload-alt fa-3x text-muted mb-3"></i>
+                                <h6>Upload Product Image</h6>
+                                <p class="text-muted mb-3">Drag and drop an image here or click to browse</p>
+                                <input type="file" class="form-control" id="image" name="image" 
+                                       accept="image/*" style="display: none;">
+                                <button type="button" class="btn btn-outline-primary" onclick="document.getElementById('image').click()">
+                                    <i class="fas fa-upload me-2"></i>
+                                    Choose File
+                                </button>
+                                <div class="form-text mt-2">Recommended: 800x600px or larger. Max 10MB.</div>
+                            </div>
+                            
+                            <div id="imagePreview" class="text-center" style="display: none;">
+                                <img id="previewImg" class="image-preview" alt="Preview">
+                                <div class="mt-2">
+                                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeImage()">
+                                        <i class="fas fa-trash me-1"></i>
+                                        Remove Image
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Form Actions -->
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <a href="/marketplace" class="btn btn-outline-secondary me-md-2">
+                                <i class="fas fa-times me-2"></i>
+                                Cancel
+                            </a>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-plus me-2"></i>
+                                Add Product
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Image upload and preview
+        const uploadArea = document.getElementById('uploadArea');
+        const imageInput = document.getElementById('image');
+        const imagePreview = document.getElementById('imagePreview');
+        const previewImg = document.getElementById('previewImg');
+        
+        // Drag and drop functionality
+        uploadArea.addEventListener('dragover', function(e) {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        
+        uploadArea.addEventListener('dragleave', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+        });
+        
+        uploadArea.addEventListener('drop', function(e) {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleImageUpload(files[0]);
+            }
+        });
+        
+        // Click to upload
+        uploadArea.addEventListener('click', function() {
+            imageInput.click();
+        });
+        
+        // File input change
+        imageInput.addEventListener('change', function(e) {
+            if (e.target.files.length > 0) {
+                handleImageUpload(e.target.files[0]);
+            }
+        });
+        
+        function handleImageUpload(file) {
+            if (file && file.type.startsWith('image/')) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    previewImg.src = e.target.result;
+                    imagePreview.style.display = 'block';
+                    uploadArea.style.display = 'none';
+                };
+                reader.readAsDataURL(file);
+            } else {
+                alert('Please select a valid image file.');
+            }
+        }
+        
+        function removeImage() {
+            imageInput.value = '';
+            imagePreview.style.display = 'none';
+            uploadArea.style.display = 'block';
+        }
+        
+        // Form validation
+        document.getElementById('productForm').addEventListener('submit', function(e) {
+            const price = parseFloat(document.getElementById('price').value);
+            const stock = parseInt(document.getElementById('stock_quantity').value);
+            
+            if (price <= 0) {
+                e.preventDefault();
+                alert('Price must be greater than 0.');
+                return;
+            }
+            
+            if (stock < 1) {
+                e.preventDefault();
+                alert('Stock quantity must be at least 1.');
+                return;
+            }
+        });
+        
+        // Auto-dismiss alerts
+        document.querySelectorAll('.alert').forEach(alert => {
+            setTimeout(() => {
+                const bsAlert = new bootstrap.Alert(alert);
+                bsAlert.close();
+            }, 5000);
+        });
+    </script>
+</body>
+</html>
+

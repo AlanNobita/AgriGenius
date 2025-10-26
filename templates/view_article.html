@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ article.title }} - AgriGenius</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .article-header {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 3rem 0;
+            margin-bottom: 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .article-header::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.1"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+            opacity: 0.3;
+        }
+        
+        .article-content {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-md);
+            margin-bottom: 2rem;
+            line-height: 1.8;
+        }
+        
+        .article-meta {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .author-info {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+        
+        .author-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 1.25rem;
+        }
+        
+        .article-stats {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+            margin-left: auto;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .stat-item i {
+            color: var(--primary-green);
+        }
+        
+        .article-actions {
+            display: flex;
+            gap: 1rem;
+            margin-top: 2rem;
+            flex-wrap: wrap;
+        }
+        
+        .btn-like {
+            background: none;
+            border: 2px solid var(--border-color);
+            color: var(--text-muted);
+            transition: all 0.3s ease;
+            border-radius: var(--radius-md);
+            padding: 0.75rem 1.5rem;
+            font-weight: 500;
+        }
+        
+        .btn-like:hover,
+        .btn-like.liked {
+            background: var(--primary-green);
+            border-color: var(--primary-green);
+            color: white;
+            transform: scale(1.05);
+        }
+        
+        .btn-like.liked {
+            animation: heartbeat 0.6s ease;
+        }
+        
+        .comments-section {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 2rem;
+            box-shadow: var(--shadow-sm);
+        }
+        
+        .comment-form {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-bottom: 2rem;
+        }
+        
+        .comment {
+            background: var(--bg-secondary);
+            border-radius: var(--radius-md);
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            border-left: 4px solid var(--primary-green);
+        }
+        
+        .comment-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 0.5rem;
+            font-size: 0.875rem;
+            color: var(--text-muted);
+        }
+        
+        .comment-author {
+            font-weight: 600;
+            color: var(--text-primary);
+        }
+        
+        .comment-date {
+            color: var(--text-muted);
+        }
+        
+        .category-badge {
+            background: var(--gradient-secondary);
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-xl);
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+        
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+        }
+        
+        .loading-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+        
+        .share-buttons {
+            display: flex;
+            gap: 0.5rem;
+            margin-top: 1rem;
+        }
+        
+        .share-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-decoration: none;
+            transition: all 0.3s ease;
+        }
+        
+        .share-btn:hover {
+            transform: scale(1.1);
+        }
+        
+        .share-facebook { background: #1877f2; }
+        .share-twitter { background: #1da1f2; }
+        .share-linkedin { background: #0077b5; }
+        .share-whatsapp { background: #25d366; }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+    
+    <div class="article-header animate-fadeInUp">
+        <div class="container">
+            <div class="row">
+                <div class="col-lg-8">
+                    <div class="d-flex align-items-center gap-2 mb-3">
+                        <span class="category-badge">{{ article.category }}</span>
+                        {% if article.verified %}
+                        <span class="badge bg-success">
+                            <i class="fas fa-check-circle me-1"></i>
+                            Verified
+                        </span>
+                        {% endif %}
+                    </div>
+                    <h1 class="display-4 fw-bold mb-3 animate-fadeInLeft">{{ article.title }}</h1>
+                    <div class="article-meta animate-fadeInLeft stagger-1">
+                        <div class="author-info">
+                            <div class="author-avatar">
+                                {{ article.author.username[0].upper() }}
+                            </div>
+                            <div>
+                                <div class="fw-semibold">
+                                    <a href="/user/{{ article.author.id }}" class="text-white text-decoration-none">
+                                        {{ article.author.username|capitalize }}
+                                    </a>
+                                </div>
+                                <small class="opacity-75">
+                                    {{ article.created_at.strftime('%B %d, %Y') }}
+                                </small>
+                            </div>
+                        </div>
+                        <div class="article-stats">
+                            <div class="stat-item">
+                                <i class="fas fa-eye"></i>
+                                <span>{{ article.views }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-heart"></i>
+                                <span>{{ article.likes }}</span>
+                            </div>
+                            <div class="stat-item">
+                                <i class="fas fa-comment"></i>
+                                <span>{{ article.article_comments|length }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="container animate-fadeInUp">
+        <div class="row">
+            <div class="col-lg-8">
+                <!-- Article Content -->
+                <div class="article-content">
+                    <div class="article-text">
+                        {{ article.content|replace('\n', '<br>')|safe }}
+                    </div>
+                    
+                    <!-- Article Actions -->
+                    <div class="article-actions">
+                        {% if current_user.is_authenticated %}
+                        <button class="btn btn-like like-btn" data-article-id="{{ article.id }}">
+                            <i class="fas fa-heart me-2"></i>
+                            <span>Like</span>
+                        </button>
+                        {% endif %}
+                        
+                        <div class="share-buttons">
+                            <a href="#" class="share-btn share-facebook" onclick="shareOnFacebook()">
+                                <i class="fab fa-facebook-f"></i>
+                            </a>
+                            <a href="#" class="share-btn share-twitter" onclick="shareOnTwitter()">
+                                <i class="fab fa-twitter"></i>
+                            </a>
+                            <a href="#" class="share-btn share-linkedin" onclick="shareOnLinkedIn()">
+                                <i class="fab fa-linkedin-in"></i>
+                            </a>
+                            <a href="#" class="share-btn share-whatsapp" onclick="shareOnWhatsApp()">
+                                <i class="fab fa-whatsapp"></i>
+                            </a>
+                        </div>
+                        
+                        {% if current_user.is_authenticated and (article.author_id == current_user.id or current_user.is_admin) %}
+                        <div class="dropdown">
+                            <button class="btn btn-outline-secondary dropdown-toggle" type="button" data-bs-toggle="dropdown">
+                                <i class="fas fa-ellipsis-v me-2"></i>
+                                Actions
+                            </button>
+                            <ul class="dropdown-menu">
+                                <li>
+                                    <a class="dropdown-item" href="/edit_article/{{ article.id }}">
+                                        <i class="fas fa-edit me-2"></i>Edit Article
+                                    </a>
+                                </li>
+                                <li>
+                                    <form method="POST" action="/delete_article/{{ article.id }}" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this article?')">
+                                        <button type="submit" class="dropdown-item text-danger">
+                                            <i class="fas fa-trash me-2"></i>Delete Article
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <!-- Comments Section -->
+                <div class="comments-section">
+                    <h4 class="mb-4">
+                        <i class="fas fa-comments me-2"></i>
+                        Comments ({{ article.article_comments|length }})
+                    </h4>
+                    
+                    {% if current_user.is_authenticated %}
+                    <div class="comment-form">
+                        <form id="commentForm">
+                            <div class="mb-3">
+                                <label for="commentContent" class="form-label">Add a comment</label>
+                                <textarea class="form-control" id="commentContent" rows="3" placeholder="Share your thoughts..."></textarea>
+                            </div>
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fas fa-paper-plane me-2"></i>
+                                Post Comment
+                            </button>
+                        </form>
+                    </div>
+                    {% else %}
+                    <div class="text-center py-4">
+                        <p class="text-muted">Please <a href="/login">login</a> to comment</p>
+                    </div>
+                    {% endif %}
+                    
+                    <div id="commentsList">
+                        {% for comment in article.article_comments %}
+                        <div class="comment animate-fadeInUp">
+                            <div class="comment-meta">
+                                <span class="comment-author">{{ comment.user.username }}</span>
+                                <span class="comment-date">{{ comment.created_at.strftime('%B %d, %Y at %I:%M %p') }}</span>
+                            </div>
+                            <div class="comment-content">{{ comment.content }}</div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <!-- Sidebar -->
+                <div class="sticky-top" style="top: 2rem;">
+                    <div class="card">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-info-circle me-2"></i>
+                                Article Info
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="mb-3">
+                                <strong>Category:</strong>
+                                <span class="badge bg-primary ms-2">{{ article.category }}</span>
+                            </div>
+                            <div class="mb-3">
+                                <strong>Published:</strong>
+                                <br>
+                                <small class="text-muted">{{ article.created_at.strftime('%B %d, %Y') }}</small>
+                            </div>
+                            {% if article.updated_at != article.created_at %}
+                            <div class="mb-3">
+                                <strong>Last Updated:</strong>
+                                <br>
+                                <small class="text-muted">{{ article.updated_at.strftime('%B %d, %Y') }}</small>
+                            </div>
+                            {% endif %}
+                            {% if article.tags %}
+                            <div class="mb-3">
+                                <strong>Tags:</strong>
+                                <br>
+                                {% for tag in article.tags.split(',') %}
+                                <span class="badge bg-secondary me-1 mb-1">{{ tag.strip() }}</span>
+                                {% endfor %}
+                            </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                    
+                    <!-- Author Card -->
+                    <div class="card mt-3">
+                        <div class="card-header">
+                            <h5 class="mb-0">
+                                <i class="fas fa-user me-2"></i>
+                                About the Author
+                            </h5>
+                        </div>
+                        <div class="card-body">
+                            <div class="d-flex align-items-center mb-3">
+                                <div class="author-avatar me-3">
+                                    {{ article.author.username[0].upper() }}
+                                </div>
+                                <div>
+                                    <h6 class="mb-0">{{ article.author.username|capitalize }}</h6>
+                                    <small class="text-muted">Member since {{ article.author.id }}</small>
+                                </div>
+                            </div>
+                            <a href="/user/{{ article.author.id }}" class="btn btn-outline-primary btn-sm">
+                                View Profile
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Loading Overlay -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="text-center text-white">
+            <div class="loading-spinner mb-3"></div>
+            <p>Processing...</p>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Like functionality
+        const likeBtn = document.querySelector('.like-btn');
+        if (likeBtn) {
+            likeBtn.addEventListener('click', async function() {
+                const articleId = this.dataset.articleId;
+                const icon = this.querySelector('i');
+                const span = this.querySelector('span');
+                
+                try {
+                    const response = await fetch(`/api/like_article/${articleId}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Update UI
+                    if (data.liked) {
+                        this.classList.add('liked');
+                        icon.classList.add('fas');
+                        icon.classList.remove('far');
+                        span.textContent = 'Liked';
+                    } else {
+                        this.classList.remove('liked');
+                        icon.classList.add('far');
+                        icon.classList.remove('fas');
+                        span.textContent = 'Like';
+                    }
+                    
+                    // Update likes count in header
+                    const likesStat = document.querySelector('.article-stats .stat-item:nth-child(2) span');
+                    likesStat.textContent = data.likes_count;
+                    
+                } catch (error) {
+                    console.error('Error liking article:', error);
+                    this.style.animation = 'shake 0.5s ease';
+                    setTimeout(() => {
+                        this.style.animation = '';
+                    }, 500);
+                }
+            });
+        }
+
+        // Comment functionality
+        const commentForm = document.getElementById('commentForm');
+        if (commentForm) {
+            commentForm.addEventListener('submit', async function(e) {
+                e.preventDefault();
+                
+                const content = document.getElementById('commentContent').value.trim();
+                if (!content) return;
+                
+                const submitBtn = this.querySelector('button[type="submit"]');
+                const originalText = submitBtn.innerHTML;
+                
+                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Posting...';
+                submitBtn.disabled = true;
+                
+                try {
+                    const response = await fetch(`/api/comment_article/{{ article.id }}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ content: content })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (data.error) {
+                        throw new Error(data.error);
+                    }
+                    
+                    // Add comment to list
+                    const commentsList = document.getElementById('commentsList');
+                    const newComment = document.createElement('div');
+                    newComment.className = 'comment animate-fadeInUp';
+                    newComment.innerHTML = `
+                        <div class="comment-meta">
+                            <span class="comment-author">${data.comment.author}</span>
+                            <span class="comment-date">Just now</span>
+                        </div>
+                        <div class="comment-content">${data.comment.content}</div>
+                    `;
+                    commentsList.appendChild(newComment);
+                    
+                    // Clear form
+                    document.getElementById('commentContent').value = '';
+                    
+                    // Update comment count
+                    const commentCount = document.querySelector('.article-stats .stat-item:nth-child(3) span');
+                    commentCount.textContent = parseInt(commentCount.textContent) + 1;
+                    
+                } catch (error) {
+                    console.error('Error posting comment:', error);
+                    alert('Error posting comment. Please try again.');
+                } finally {
+                    submitBtn.innerHTML = originalText;
+                    submitBtn.disabled = false;
+                }
+            });
+        }
+
+        // Share functionality
+        function shareOnFacebook() {
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent('{{ article.title }}');
+            window.open(`https://www.facebook.com/sharer/sharer.php?u=${url}`, '_blank');
+        }
+
+        function shareOnTwitter() {
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent('{{ article.title }}');
+            window.open(`https://twitter.com/intent/tweet?url=${url}&text=${title}`, '_blank');
+        }
+
+        function shareOnLinkedIn() {
+            const url = encodeURIComponent(window.location.href);
+            window.open(`https://www.linkedin.com/sharing/share-offsite/?url=${url}`, '_blank');
+        }
+
+        function shareOnWhatsApp() {
+            const url = encodeURIComponent(window.location.href);
+            const title = encodeURIComponent('{{ article.title }}');
+            window.open(`https://wa.me/?text=${title}%20${url}`, '_blank');
+        }
+
+        // Smooth scroll for anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function (e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'start'
+                    });
+                }
+            });
+        });
+
+        // Add loading states to buttons
+        document.querySelectorAll('button').forEach(btn => {
+            btn.addEventListener('click', function() {
+                if (this.type === 'submit') {
+                    this.style.opacity = '0.7';
+                    setTimeout(() => {
+                        this.style.opacity = '1';
+                    }, 1000);
+                }
+            });
+        });
+    </script>
+</body>
+</html>

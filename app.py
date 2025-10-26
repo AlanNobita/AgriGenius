@@ -13,6 +13,8 @@ from dotenv import load_dotenv
 from sensors.sensors import get_sensor_data
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
+import uuid
 
 # Load environment variables from .env file
 load_dotenv()
@@ -45,6 +47,51 @@ logging.basicConfig(
     ]
 )
 
+# File upload configuration
+UPLOAD_FOLDER = 'static/uploads'
+ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'mp4', 'avi', 'mov', 'mp3', 'wav', 'ogg'}
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max file size
+
+# Create upload directory if it doesn't exist
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+os.makedirs(os.path.join(UPLOAD_FOLDER, 'images'), exist_ok=True)
+os.makedirs(os.path.join(UPLOAD_FOLDER, 'videos'), exist_ok=True)
+os.makedirs(os.path.join(UPLOAD_FOLDER, 'audio'), exist_ok=True)
+
+def allowed_file(filename):
+    return '.' in filename and filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
+
+def get_file_type(filename):
+    if filename:
+        ext = filename.rsplit('.', 1)[1].lower()
+        if ext in ['png', 'jpg', 'jpeg', 'gif']:
+            return 'image'
+        elif ext in ['mp4', 'avi', 'mov']:
+            return 'video'
+        elif ext in ['mp3', 'wav', 'ogg']:
+            return 'audio'
+    return 'none'
+
+def save_uploaded_file(file, file_type):
+    if file and allowed_file(file.filename):
+        filename = secure_filename(file.filename)
+        # Add unique identifier to prevent conflicts
+        unique_filename = f"{uuid.uuid4()}_{filename}"
+        
+        if file_type == 'image':
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'images', unique_filename)
+        elif file_type == 'video':
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'videos', unique_filename)
+        elif file_type == 'audio':
+            filepath = os.path.join(app.config['UPLOAD_FOLDER'], 'audio', unique_filename)
+        else:
+            return None
+            
+        file.save(filepath)
+        return f"uploads/{file_type}s/{unique_filename}"
+    return None
+
 
 # User model for authentication
 class User(UserMixin, db.Model):
@@ -64,6 +111,17 @@ class Article(db.Model):
     content = db.Column(db.Text, nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     verified = db.Column(db.Boolean, default=False)  # Admin verification
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    category = db.Column(db.String(50), default='General')
+    tags = db.Column(db.Text, nullable=True)  # JSON string of tags
+    # File upload fields
+    image_url = db.Column(db.String(500))
+    video_url = db.Column(db.String(500))
+    audio_url = db.Column(db.String(500))
+    file_type = db.Column(db.String(50))  # 'image', 'video', 'audio', 'none'
 
 
 # Documentation model for restricted articles
@@ -73,6 +131,36 @@ class Documentation(db.Model):
     content = db.Column(db.Text, nullable=False)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     verified = db.Column(db.Boolean, default=False)  # Admin verification
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    category = db.Column(db.String(50), default='General')
+    tags = db.Column(db.Text, nullable=True)  # JSON string of tags
+    # File upload fields
+    image_url = db.Column(db.String(500))
+    video_url = db.Column(db.String(500))
+    audio_url = db.Column(db.String(500))
+    file_type = db.Column(db.String(50))  # 'image', 'video', 'audio', 'none'
+
+# Product model for marketplace
+class Product(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(200), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    price = db.Column(db.Float, nullable=False)
+    category = db.Column(db.String(100), nullable=False)
+    seller_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    image_url = db.Column(db.String(500))
+    stock_quantity = db.Column(db.Integer, default=1)
+    is_available = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    views = db.Column(db.Integer, default=0)
+    likes = db.Column(db.Integer, default=0)
+    
+    # Relationships
+    seller = db.relationship('User', backref=db.backref('products', lazy=True))
 
 # Conversation model for chat history
 class Conversation(db.Model):
@@ -107,15 +195,50 @@ class UserMemory(db.Model):
     updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
     user = db.relationship('User', backref=db.backref('memories', lazy=True))
 
+# Like model for articles and documentation
+class Like(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=True)
+    doc_id = db.Column(db.Integer, db.ForeignKey('documentation.id'), nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    user = db.relationship('User', backref=db.backref('likes', lazy=True))
+    article = db.relationship('Article', backref=db.backref('article_likes', lazy=True))
+    doc = db.relationship('Documentation', backref=db.backref('doc_likes', lazy=True))
+
+# Comment model for articles and documentation
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=True)
+    doc_id = db.Column(db.Integer, db.ForeignKey('documentation.id'), nullable=True)
+    content = db.Column(db.Text, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    user = db.relationship('User', backref=db.backref('comments', lazy=True))
+    article = db.relationship('Article', backref=db.backref('article_comments', lazy=True))
+    doc = db.relationship('Documentation', backref=db.backref('doc_comments', lazy=True))
+
 @login_manager.user_loader
 def load_user(user_id):
-    return User.query.get(int(user_id))
+    return db.session.get(User, int(user_id))
 
 # Home route (Sector 5)
 @app.route('/')
 def home():
     return render_template('home.html')
 
+# Notifications route
+@app.route('/notifications')
+def notifications():
+    return render_template('notifications.html')
+
+# My Posts route
+@app.route('/my-posts')
+@login_required
+def my_posts():
+    user_articles = Article.query.filter_by(author_id=current_user.id).order_by(Article.created_at.desc()).all()
+    return render_template('my-posts.html', articles=user_articles)
 
 # Sector 1: Public Articles
 
@@ -128,16 +251,108 @@ def articles():
 
 @app.route('/marketplace')
 def marketplace():
-    return render_template('marketplace.html')
+    search = request.args.get('search', '')
+    category = request.args.get('category', '')
+    sort_by = request.args.get('sort', 'newest')
+    
+    query = Product.query.filter_by(is_available=True)
+    
+    if search:
+        query = query.filter(Product.name.contains(search) | Product.description.contains(search))
+    
+    if category:
+        query = query.filter_by(category=category)
+    
+    if sort_by == 'price_low':
+        query = query.order_by(Product.price.asc())
+    elif sort_by == 'price_high':
+        query = query.order_by(Product.price.desc())
+    elif sort_by == 'popular':
+        query = query.order_by(Product.views.desc())
+    else:  # newest
+        query = query.order_by(Product.created_at.desc())
+    
+    products = query.all()
+    categories = db.session.query(Product.category.distinct()).all()
+    categories = [cat[0] for cat in categories if cat[0]]
+    
+    return render_template('marketplace.html', products=products, categories=categories, 
+                         search=search, selected_category=category, sort_by=sort_by)
+
+@app.route('/product/<int:product_id>')
+def view_product(product_id):
+    product = Product.query.get_or_404(product_id)
+    product.views += 1
+    db.session.commit()
+    return render_template('product_detail.html', product=product)
+
+@app.route('/contact_seller/<int:product_id>')
+def contact_seller(product_id):
+    product = Product.query.get_or_404(product_id)
+    return render_template('contact_seller.html', product=product)
+
+@app.route('/add_product', methods=['GET', 'POST'])
+@login_required
+def add_product():
+    if request.method == 'POST':
+        try:
+            name = request.form.get('name', '').strip()
+            description = request.form.get('description', '').strip()
+            price = float(request.form.get('price', 0))
+            category = request.form.get('category', '').strip()
+            stock_quantity = int(request.form.get('stock_quantity', 1))
+            
+            # Validation
+            if not name or len(name) < 3:
+                flash('Product name must be at least 3 characters long.')
+                return render_template('add_product.html')
+            
+            if not description or len(description) < 10:
+                flash('Description must be at least 10 characters long.')
+                return render_template('add_product.html')
+            
+            if price <= 0:
+                flash('Price must be greater than 0.')
+                return render_template('add_product.html')
+            
+            # Handle image upload
+            image_url = None
+            if 'image' in request.files:
+                image_file = request.files['image']
+                if image_file and image_file.filename:
+                    image_url = save_uploaded_file(image_file, 'image')
+            
+            new_product = Product(
+                name=name,
+                description=description,
+                price=price,
+                category=category,
+                seller_id=current_user.id,
+                image_url=image_url,
+                stock_quantity=stock_quantity
+            )
+            
+            db.session.add(new_product)
+            db.session.commit()
+            flash('Product added successfully!')
+            return redirect(url_for('marketplace'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Error adding product. Please try again.')
+            app.logger.error(f'Error adding product: {str(e)}')
+    
+    return render_template('add_product.html')
 
 # Post a new article
 @app.route('/post_article', methods=['GET', 'POST'])
-@login_required
 def post_article():
     if request.method == 'POST':
         try:
             title = request.form.get('title', '').strip()
             content = request.form.get('content', '').strip()
+            category = request.form.get('category', 'General').strip()
+            tags = request.form.get('tags', '').strip()
 
             # Validation
             if not title or len(title) < 3:
@@ -152,16 +367,56 @@ def post_article():
                 flash('Title is too long (maximum 200 characters).')
                 return render_template('post_article.html')
 
+            # Handle anonymous users
+            author_id = current_user.id if current_user.is_authenticated else None
+            
+            # Handle file uploads
+            image_url = None
+            video_url = None
+            audio_url = None
+            file_type = 'none'
+            
+            # Check for image upload
+            if 'image' in request.files:
+                image_file = request.files['image']
+                if image_file and image_file.filename:
+                    image_url = save_uploaded_file(image_file, 'image')
+                    if image_url:
+                        file_type = 'image'
+            
+            # Check for video upload
+            if 'video' in request.files:
+                video_file = request.files['video']
+                if video_file and video_file.filename:
+                    video_url = save_uploaded_file(video_file, 'video')
+                    if video_url:
+                        file_type = 'video'
+            
+            # Check for audio upload
+            if 'audio' in request.files:
+                audio_file = request.files['audio']
+                if audio_file and audio_file.filename:
+                    audio_url = save_uploaded_file(audio_file, 'audio')
+                    if audio_url:
+                        file_type = 'audio'
+            
             new_article = Article(
                 title=title,
                 content=content,
-                author_id=current_user.id,
-                verified=False
+                author_id=author_id,
+                verified=False,
+                category=category,
+                tags=tags,
+                image_url=image_url,
+                video_url=video_url,
+                audio_url=audio_url,
+                file_type=file_type
             )
             db.session.add(new_article)
             db.session.commit()
             flash('Article submitted for review!')
-            app.logger.info(f'User {current_user.username} submitted article: {title}')
+            username = current_user.username if current_user.is_authenticated else 'Anonymous'
+            app.logger.info(f'User {username} submitted article: {title}')
             return redirect(url_for('articles'))
 
         except Exception as e:
@@ -187,6 +442,8 @@ def documentation():
         try:
             title = request.form.get('title', '').strip()
             content = request.form.get('content', '').strip()
+            category = request.form.get('category', 'General').strip()
+            tags = request.form.get('tags', '').strip()
 
             # Validation
             if not title or len(title) < 3:
@@ -205,7 +462,9 @@ def documentation():
                 title=title,
                 content=content,
                 author_id=current_user.id,
-                verified=False
+                verified=False,
+                category=category,
+                tags=tags
             )
             db.session.add(new_doc)
             db.session.commit()
@@ -784,8 +1043,10 @@ def call_openrouter_api(user_input, sensor_data, conversation, user_memory):
         raise e
 
 def build_system_prompt(sensor_data, user_memory):
-    """Build system prompt with context"""
+    """Build system prompt with context including documentation and articles"""
     prompt = """You are AgriGenius AI, an expert agricultural assistant. You help farmers optimize their operations with intelligent advice based on real-time data and agricultural best practices.
+
+IMPORTANT: When answering questions, if there is relevant information in the documentation or articles database, you MUST cite your sources by mentioning the article/documentation title and providing a reference like "[Source: Article Title]" or "[Ref: Documentation Title]".
 
 CURRENT SENSOR DATA:
 """
@@ -803,6 +1064,30 @@ CURRENT SENSOR DATA:
 """
     else:
         prompt += "- Sensor data currently unavailable\n"
+
+    # Add relevant documentation and articles as knowledge base
+    try:
+        # Get recent verified articles and documentation
+        recent_articles = Article.query.filter_by(verified=True).order_by(Article.created_at.desc()).limit(10).all()
+        recent_docs = Documentation.query.filter_by(verified=True).order_by(Documentation.created_at.desc()).limit(10).all()
+
+        if recent_articles:
+            prompt += "\n\nRELEVANT ARTICLES FROM KNOWLEDGE BASE:\n"
+            for article in recent_articles:
+                prompt += f"\n- Title: {article.title}\n"
+                prompt += f"  Category: {article.category}\n"
+                prompt += f"  Summary: {article.content[:200]}...\n"
+
+        if recent_docs:
+            prompt += "\n\nRELEVANT DOCUMENTATION:\n"
+            for doc in recent_docs:
+                prompt += f"\n- Title: {doc.title}\n"
+                prompt += f"  Category: {doc.category}\n"
+                prompt += f"  Summary: {doc.content[:200]}...\n"
+
+        prompt += "\n\nWhen providing information that comes from these sources, ALWAYS cite them using the format: [Source: Title]\n"
+    except Exception as e:
+        app.logger.error(f'Error fetching knowledge base: {str(e)}')
 
     # Add user memory context
     if user_memory:
@@ -834,11 +1119,36 @@ Respond as a knowledgeable agricultural expert who cares about the farmer's succ
     return prompt
 
 def generate_local_response(user_input, sensor_data, user_memory):
-    """Enhanced local response generation with user memory"""
+    """Enhanced local response generation with user memory and source citations"""
     user_input_lower = user_input.lower()
 
     # Get user context
     user_crops = list(user_memory.get('crops', {}).keys()) if user_memory.get('crops') else []
+
+    # Search for relevant articles and documentation
+    relevant_sources = []
+    try:
+        # Search in articles
+        articles = Article.query.filter_by(verified=True).filter(
+            (Article.title.contains(user_input)) |
+            (Article.content.contains(user_input)) |
+            (Article.tags.contains(user_input))
+        ).limit(3).all()
+
+        for article in articles:
+            relevant_sources.append(f"[Source: {article.title}]")
+
+        # Search in documentation
+        docs = Documentation.query.filter_by(verified=True).filter(
+            (Documentation.title.contains(user_input)) |
+            (Documentation.content.contains(user_input)) |
+            (Documentation.tags.contains(user_input))
+        ).limit(3).all()
+
+        for doc in docs:
+            relevant_sources.append(f"[Ref: {doc.title}]")
+    except Exception as e:
+        app.logger.error(f'Error searching sources: {str(e)}')
     user_location = user_memory.get('location', {}).get('region', '') if user_memory.get('location') else ''
 
     # Personalized greeting
@@ -881,6 +1191,10 @@ def generate_local_response(user_input, sensor_data, user_memory):
                     response += "• Tomatoes may need shade in this heat\n"
                 elif crop == 'lettuce' and temp > 25:
                     response += "• Lettuce prefers cooler conditions - consider shade cloth\n"
+
+        # Add sources if found
+        if relevant_sources:
+            response += f"\n\n📚 **Sources**: {', '.join(relevant_sources[:3])}"
 
         return response
 
@@ -1212,6 +1526,300 @@ def public_profile(user_id):
     user_articles = Article.query.filter_by(author_id=user.id).all()
     user_docs = Documentation.query.filter_by(author_id=user.id).all()
     return render_template('public_profile.html', user=user, articles=user_articles, docs=user_docs)
+
+# Article and Documentation Enhancement Routes
+
+# Like/Unlike article
+@app.route('/api/like_article/<int:article_id>', methods=['POST'])
+@login_required
+def like_article(article_id):
+    try:
+        article = Article.query.get_or_404(article_id)
+        existing_like = Like.query.filter_by(user_id=current_user.id, article_id=article_id).first()
+        
+        if existing_like:
+            # Unlike
+            db.session.delete(existing_like)
+            article.likes = max(0, article.likes - 1)
+            liked = False
+        else:
+            # Like
+            new_like = Like(user_id=current_user.id, article_id=article_id)
+            db.session.add(new_like)
+            article.likes += 1
+            liked = True
+        
+        db.session.commit()
+        return jsonify({'liked': liked, 'likes_count': article.likes})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# Like/Unlike documentation
+@app.route('/api/like_doc/<int:doc_id>', methods=['POST'])
+@login_required
+def like_doc(doc_id):
+    try:
+        doc = Documentation.query.get_or_404(doc_id)
+        existing_like = Like.query.filter_by(user_id=current_user.id, doc_id=doc_id).first()
+        
+        if existing_like:
+            # Unlike
+            db.session.delete(existing_like)
+            doc.likes = max(0, doc.likes - 1)
+            liked = False
+        else:
+            # Like
+            new_like = Like(user_id=current_user.id, doc_id=doc_id)
+            db.session.add(new_like)
+            doc.likes += 1
+            liked = True
+        
+        db.session.commit()
+        return jsonify({'liked': liked, 'likes_count': doc.likes})
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# Add comment to article
+@app.route('/api/comment_article/<int:article_id>', methods=['POST'])
+@login_required
+def comment_article(article_id):
+    try:
+        data = request.json
+        content = data.get('content', '').strip()
+        
+        if not content:
+            return jsonify({'error': 'Comment cannot be empty'}), 400
+        
+        article = Article.query.get_or_404(article_id)
+        comment = Comment(
+            user_id=current_user.id,
+            article_id=article_id,
+            content=content
+        )
+        db.session.add(comment)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'comment': {
+                'id': comment.id,
+                'content': comment.content,
+                'author': current_user.username,
+                'created_at': comment.created_at.isoformat()
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# Add comment to documentation
+@app.route('/api/comment_doc/<int:doc_id>', methods=['POST'])
+@login_required
+def comment_doc(doc_id):
+    try:
+        data = request.json
+        content = data.get('content', '').strip()
+        
+        if not content:
+            return jsonify({'error': 'Comment cannot be empty'}), 400
+        
+        doc = Documentation.query.get_or_404(doc_id)
+        comment = Comment(
+            user_id=current_user.id,
+            doc_id=doc_id,
+            content=content
+        )
+        db.session.add(comment)
+        db.session.commit()
+        
+        return jsonify({
+            'success': True,
+            'comment': {
+                'id': comment.id,
+                'content': comment.content,
+                'author': current_user.username,
+                'created_at': comment.created_at.isoformat()
+            }
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# Edit article
+@app.route('/edit_article/<int:article_id>', methods=['GET', 'POST'])
+@login_required
+def edit_article(article_id):
+    article = Article.query.get_or_404(article_id)
+    
+    # Check if user can edit (author or admin)
+    if article.author_id != current_user.id and not current_user.is_admin:
+        flash('You do not have permission to edit this article.')
+        return redirect(url_for('articles'))
+    
+    if request.method == 'POST':
+        try:
+            title = request.form.get('title', '').strip()
+            content = request.form.get('content', '').strip()
+            category = request.form.get('category', 'General').strip()
+            tags = request.form.get('tags', '').strip()
+            
+            # Validation
+            if not title or len(title) < 3:
+                flash('Title must be at least 3 characters long.')
+                return render_template('edit_article.html', article=article)
+            
+            if not content or len(content) < 10:
+                flash('Content must be at least 10 characters long.')
+                return render_template('edit_article.html', article=article)
+            
+            # Update article
+            article.title = title
+            article.content = content
+            article.category = category
+            article.tags = tags
+            article.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            flash('Article updated successfully!')
+            return redirect(url_for('articles'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating article. Please try again.')
+            app.logger.error(f'Error updating article: {str(e)}')
+    
+    return render_template('edit_article.html', article=article)
+
+# Edit documentation
+@app.route('/edit_doc/<int:doc_id>', methods=['GET', 'POST'])
+@login_required
+def edit_doc(doc_id):
+    doc = Documentation.query.get_or_404(doc_id)
+    
+    # Check if user can edit (author or admin)
+    if doc.author_id != current_user.id and not current_user.is_admin:
+        flash('You do not have permission to edit this documentation.')
+        return redirect(url_for('documentation'))
+    
+    if request.method == 'POST':
+        try:
+            title = request.form.get('title', '').strip()
+            content = request.form.get('content', '').strip()
+            category = request.form.get('category', 'General').strip()
+            tags = request.form.get('tags', '').strip()
+            
+            # Validation
+            if not title or len(title) < 3:
+                flash('Title must be at least 3 characters long.')
+                return render_template('edit_doc.html', doc=doc)
+            
+            if not content or len(content) < 10:
+                flash('Content must be at least 10 characters long.')
+                return render_template('edit_doc.html', doc=doc)
+            
+            # Update documentation
+            doc.title = title
+            doc.content = content
+            doc.category = category
+            doc.tags = tags
+            doc.updated_at = datetime.utcnow()
+            
+            db.session.commit()
+            flash('Documentation updated successfully!')
+            return redirect(url_for('documentation'))
+            
+        except Exception as e:
+            db.session.rollback()
+            flash('Error updating documentation. Please try again.')
+            app.logger.error(f'Error updating documentation: {str(e)}')
+    
+    return render_template('edit_doc.html', doc=doc)
+
+# Delete article
+@app.route('/delete_article/<int:article_id>', methods=['POST'])
+@login_required
+def delete_article(article_id):
+    try:
+        article = Article.query.get_or_404(article_id)
+        
+        # Check if user can delete (author or admin)
+        if article.author_id != current_user.id and not current_user.is_admin:
+            flash('You do not have permission to delete this article.')
+            return redirect(url_for('articles'))
+        
+        # Delete related likes and comments
+        Like.query.filter_by(article_id=article_id).delete()
+        Comment.query.filter_by(article_id=article_id).delete()
+        
+        # Delete article
+        db.session.delete(article)
+        db.session.commit()
+        
+        flash('Article deleted successfully!')
+        app.logger.info(f'Article {article_id} deleted by user {current_user.username}')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting article. Please try again.')
+        app.logger.error(f'Error deleting article {article_id}: {str(e)}')
+    
+    return redirect(url_for('articles'))
+
+# Delete documentation
+@app.route('/delete_doc/<int:doc_id>', methods=['POST'])
+@login_required
+def delete_doc(doc_id):
+    try:
+        doc = Documentation.query.get_or_404(doc_id)
+        
+        # Check if user can delete (author or admin)
+        if doc.author_id != current_user.id and not current_user.is_admin:
+            flash('You do not have permission to delete this documentation.')
+            return redirect(url_for('documentation'))
+        
+        # Delete related likes and comments
+        Like.query.filter_by(doc_id=doc_id).delete()
+        Comment.query.filter_by(doc_id=doc_id).delete()
+        
+        # Delete documentation
+        db.session.delete(doc)
+        db.session.commit()
+        
+        flash('Documentation deleted successfully!')
+        app.logger.info(f'Documentation {doc_id} deleted by user {current_user.username}')
+        
+    except Exception as e:
+        db.session.rollback()
+        flash('Error deleting documentation. Please try again.')
+        app.logger.error(f'Error deleting documentation {doc_id}: {str(e)}')
+    
+    return redirect(url_for('documentation'))
+
+# View article (increment views)
+@app.route('/view_article/<int:article_id>')
+def view_article(article_id):
+    try:
+        article = Article.query.get_or_404(article_id)
+        article.views += 1
+        db.session.commit()
+        return render_template('view_article.html', article=article)
+    except Exception as e:
+        app.logger.error(f'Error viewing article {article_id}: {str(e)}')
+        return redirect(url_for('articles'))
+
+# View documentation (increment views)
+@app.route('/view_doc/<int:doc_id>')
+def view_doc(doc_id):
+    try:
+        doc = Documentation.query.get_or_404(doc_id)
+        doc.views += 1
+        db.session.commit()
+        return render_template('view_doc.html', doc=doc)
+    except Exception as e:
+        app.logger.error(f'Error viewing documentation {doc_id}: {str(e)}')
+        return redirect(url_for('documentation'))
 
 
 

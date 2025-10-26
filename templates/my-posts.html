@@ -1,2 +1,414 @@
-<h1>My Posts</h1>
-<p>View and manage your posts here.</p>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Posts - AgriGenius</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <style>
+        .my-posts-container {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 1rem;
+        }
+
+        .page-header {
+            background: var(--gradient-primary);
+            color: white;
+            padding: 2rem;
+            border-radius: var(--radius-xl);
+            margin-bottom: 2rem;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stats-row {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            margin-bottom: 2rem;
+        }
+
+        .stat-box {
+            background: var(--bg-card);
+            padding: 1.5rem;
+            border-radius: var(--radius-lg);
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+
+        .stat-box:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+        }
+
+        .stat-box i {
+            font-size: 2rem;
+            color: var(--primary-green);
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-number {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--text-primary);
+            display: block;
+        }
+
+        .stat-label {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+        }
+
+        .filter-tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 0.75rem 1.5rem;
+            border: 2px solid var(--border-color);
+            background: var(--bg-card);
+            color: var(--text-primary);
+            border-radius: var(--radius-lg);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 500;
+        }
+
+        .filter-btn.active {
+            background: var(--primary-green);
+            color: white;
+            border-color: var(--primary-green);
+        }
+
+        .filter-btn:hover {
+            border-color: var(--primary-green);
+            transform: translateY(-2px);
+        }
+
+        .post-card {
+            background: var(--bg-card);
+            border-radius: var(--radius-lg);
+            padding: 1.5rem;
+            margin-bottom: 1.5rem;
+            box-shadow: var(--shadow-md);
+            transition: all 0.3s ease;
+            border-left: 4px solid transparent;
+        }
+
+        .post-card:hover {
+            transform: translateX(5px);
+            box-shadow: var(--shadow-lg);
+            border-left-color: var(--primary-green);
+        }
+
+        .post-card.verified {
+            border-left-color: var(--secondary-green);
+        }
+
+        .post-card.pending {
+            border-left-color: #ffa726;
+        }
+
+        .post-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .post-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--text-primary);
+            margin-bottom: 0.5rem;
+        }
+
+        .post-meta {
+            display: flex;
+            gap: 1.5rem;
+            color: var(--text-muted);
+            font-size: 0.875rem;
+            margin-bottom: 1rem;
+        }
+
+        .post-meta i {
+            margin-right: 0.25rem;
+        }
+
+        .post-status {
+            padding: 0.375rem 0.75rem;
+            border-radius: var(--radius-md);
+            font-size: 0.8rem;
+            font-weight: 600;
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-verified {
+            background: rgba(76, 175, 80, 0.1);
+            color: var(--secondary-green);
+        }
+
+        .status-pending {
+            background: rgba(255, 167, 38, 0.1);
+            color: #ffa726;
+        }
+
+        .post-actions {
+            display: flex;
+            gap: 0.5rem;
+        }
+
+        .action-btn {
+            padding: 0.5rem 1rem;
+            border-radius: var(--radius-md);
+            border: none;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .btn-view {
+            background: var(--primary-green);
+            color: white;
+        }
+
+        .btn-view:hover {
+            background: var(--secondary-green);
+            transform: translateY(-2px);
+        }
+
+        .btn-edit {
+            background: var(--bg-tertiary);
+            color: var(--text-primary);
+        }
+
+        .btn-edit:hover {
+            background: var(--accent-green);
+            color: white;
+        }
+
+        .btn-delete {
+            background: rgba(244, 67, 54, 0.1);
+            color: #f44336;
+        }
+
+        .btn-delete:hover {
+            background: #f44336;
+            color: white;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 4rem 2rem;
+        }
+
+        .empty-state i {
+            font-size: 5rem;
+            color: var(--text-muted);
+            margin-bottom: 1rem;
+        }
+
+        .empty-state h3 {
+            color: var(--text-primary);
+            margin-bottom: 1rem;
+        }
+
+        .empty-state p {
+            color: var(--text-muted);
+            margin-bottom: 2rem;
+        }
+    </style>
+</head>
+<body>
+    {% include 'navbar.html' %}
+
+    <div class="my-posts-container">
+        <div class="page-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h1 class="mb-2">
+                        <i class="fas fa-newspaper me-2"></i>
+                        My Posts
+                    </h1>
+                    <p class="mb-0 opacity-90">Manage and track all your articles</p>
+                </div>
+                <a href="/post_article" class="btn btn-light btn-lg">
+                    <i class="fas fa-plus me-2"></i>
+                    New Article
+                </a>
+            </div>
+        </div>
+
+        <div class="stats-row">
+            <div class="stat-box">
+                <i class="fas fa-file-alt"></i>
+                <span class="stat-number">{{ articles|length }}</span>
+                <span class="stat-label">Total Posts</span>
+            </div>
+            <div class="stat-box">
+                <i class="fas fa-check-circle"></i>
+                <span class="stat-number">{{ articles|selectattr('verified', 'equalto', True)|list|length }}</span>
+                <span class="stat-label">Verified</span>
+            </div>
+            <div class="stat-box">
+                <i class="fas fa-clock"></i>
+                <span class="stat-number">{{ articles|selectattr('verified', 'equalto', False)|list|length }}</span>
+                <span class="stat-label">Pending</span>
+            </div>
+            <div class="stat-box">
+                <i class="fas fa-heart"></i>
+                <span class="stat-number">{{ articles|sum(attribute='likes')|default(0) }}</span>
+                <span class="stat-label">Total Likes</span>
+            </div>
+        </div>
+
+        <div class="filter-tabs">
+            <button class="filter-btn active" data-filter="all">
+                <i class="fas fa-list me-2"></i>All Posts
+            </button>
+            <button class="filter-btn" data-filter="verified">
+                <i class="fas fa-check-circle me-2"></i>Verified
+            </button>
+            <button class="filter-btn" data-filter="pending">
+                <i class="fas fa-clock me-2"></i>Pending
+            </button>
+        </div>
+
+        <div id="postsContainer">
+            {% if articles %}
+                {% for article in articles %}
+                <div class="post-card {% if article.verified %}verified{% else %}pending{% endif %}" data-status="{% if article.verified %}verified{% else %}pending{% endif %}">
+                    <div class="post-header">
+                        <div class="flex-grow-1">
+                            <h3 class="post-title">{{ article.title }}</h3>
+                            <div class="post-meta">
+                                <span>
+                                    <i class="fas fa-calendar"></i>
+                                    {{ article.created_at.strftime('%B %d, %Y') }}
+                                </span>
+                                <span>
+                                    <i class="fas fa-tag"></i>
+                                    {{ article.category }}
+                                </span>
+                                <span>
+                                    <i class="fas fa-heart"></i>
+                                    {{ article.likes }} likes
+                                </span>
+                                <span>
+                                    <i class="fas fa-comment"></i>
+                                    {{ article.article_comments|length }} comments
+                                </span>
+                            </div>
+                        </div>
+                        <div>
+                            {% if article.verified %}
+                            <span class="post-status status-verified">
+                                <i class="fas fa-check-circle"></i>
+                                Verified
+                            </span>
+                            {% else %}
+                            <span class="post-status status-pending">
+                                <i class="fas fa-clock"></i>
+                                Pending Review
+                            </span>
+                            {% endif %}
+                        </div>
+                    </div>
+
+                    <p class="text-muted mb-3">
+                        {{ article.content[:200] }}{% if article.content|length > 200 %}...{% endif %}
+                    </p>
+
+                    <div class="post-actions">
+                        <a href="/view_article/{{ article.id }}" class="action-btn btn-view">
+                            <i class="fas fa-eye me-1"></i>
+                            View
+                        </a>
+                        <a href="/edit_article/{{ article.id }}" class="action-btn btn-edit">
+                            <i class="fas fa-edit me-1"></i>
+                            Edit
+                        </a>
+                        <button class="action-btn btn-delete" onclick="deletePost({{ article.id }})">
+                            <i class="fas fa-trash me-1"></i>
+                            Delete
+                        </button>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="empty-state">
+                    <i class="fas fa-file-alt"></i>
+                    <h3>No posts yet</h3>
+                    <p>Start sharing your agricultural knowledge with the community!</p>
+                    <a href="/post_article" class="btn btn-primary btn-lg">
+                        <i class="fas fa-plus me-2"></i>
+                        Create Your First Post
+                    </a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Filter functionality
+        const filterBtns = document.querySelectorAll('.filter-btn');
+        const postCards = document.querySelectorAll('.post-card');
+
+        filterBtns.forEach(btn => {
+            btn.addEventListener('click', function() {
+                // Update active button
+                filterBtns.forEach(b => b.classList.remove('active'));
+                this.classList.add('active');
+
+                const filter = this.dataset.filter;
+
+                // Filter posts
+                postCards.forEach(card => {
+                    if (filter === 'all') {
+                        card.style.display = 'block';
+                    } else {
+                        if (card.dataset.status === filter) {
+                            card.style.display = 'block';
+                        } else {
+                            card.style.display = 'none';
+                        }
+                    }
+                });
+            });
+        });
+
+        // Delete post function
+        function deletePost(articleId) {
+            if (confirm('Are you sure you want to delete this post? This action cannot be undone.')) {
+                fetch(`/delete_article/${articleId}`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    }
+                })
+                .then(response => {
+                    if (response.ok) {
+                        location.reload();
+                    } else {
+                        alert('Failed to delete post. Please try again.');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    alert('An error occurred. Please try again.');
+                });
+            }
+        }
+    </script>
+</body>
+</html>

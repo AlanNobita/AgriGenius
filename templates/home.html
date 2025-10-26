@@ -117,6 +117,168 @@
         </div>
     </section>
 
+    <!-- Shed Status Section -->
+    <section class="py-5 bg-light">
+        <div class="container">
+            <div class="text-center mb-5">
+                <h2 class="display-5 fw-bold text-gradient">
+                    <i class="fas fa-warehouse me-2"></i>
+                    Shed Status Monitor
+                </h2>
+                <p class="lead text-muted">Real-time monitoring of all your farm sheds and storage facilities</p>
+            </div>
+
+            <div class="row g-4">
+                <div class="col-md-6 col-lg-3">
+                    <div class="card card-enhanced h-100 border-0 shadow">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-warehouse fa-3x text-success"></i>
+                            </div>
+                            <h5 class="card-title">Shed A - Grain Storage</h5>
+                            <div class="mb-3">
+                                <span class="badge bg-success fs-6">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Operational
+                                </span>
+                            </div>
+                            <div class="text-start">
+                                <p class="mb-2">
+                                    <i class="fas fa-thermometer-half text-danger me-2"></i>
+                                    <strong>Temp:</strong> <span id="shedATemp">22°C</span>
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-tint text-primary me-2"></i>
+                                    <strong>Humidity:</strong> <span id="shedAHumidity">55%</span>
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-box text-warning me-2"></i>
+                                    <strong>Capacity:</strong> <span id="shedACapacity">78%</span>
+                                </p>
+                                <p class="mb-0">
+                                    <i class="fas fa-clock text-muted me-2"></i>
+                                    <strong>Last Check:</strong> <span class="text-muted">5 min ago</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="card card-enhanced h-100 border-0 shadow">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-warehouse fa-3x text-success"></i>
+                            </div>
+                            <h5 class="card-title">Shed B - Equipment</h5>
+                            <div class="mb-3">
+                                <span class="badge bg-success fs-6">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Operational
+                                </span>
+                            </div>
+                            <div class="text-start">
+                                <p class="mb-2">
+                                    <i class="fas fa-thermometer-half text-danger me-2"></i>
+                                    <strong>Temp:</strong> <span id="shedBTemp">25°C</span>
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-tint text-primary me-2"></i>
+                                    <strong>Humidity:</strong> <span id="shedBHumidity">62%</span>
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-tools text-info me-2"></i>
+                                    <strong>Equipment:</strong> <span id="shedBEquipment">12 items</span>
+                                </p>
+                                <p class="mb-0">
+                                    <i class="fas fa-clock text-muted me-2"></i>
+                                    <strong>Last Check:</strong> <span class="text-muted">3 min ago</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="card card-enhanced h-100 border-0 shadow">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-warehouse fa-3x text-warning"></i>
+                            </div>
+                            <h5 class="card-title">Shed C - Livestock</h5>
+                            <div class="mb-3">
+                                <span class="badge bg-warning fs-6">
+                                    <i class="fas fa-exclamation-triangle me-1"></i>
+                                    Attention Needed
+                                </span>
+                            </div>
+                            <div class="text-start">
+                                <p class="mb-2">
+                                    <i class="fas fa-thermometer-half text-danger me-2"></i>
+                                    <strong>Temp:</strong> <span id="shedCTemp" class="text-warning">29°C</span>
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-tint text-primary me-2"></i>
+                                    <strong>Humidity:</strong> <span id="shedCHumidity">71%</span>
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-paw text-success me-2"></i>
+                                    <strong>Animals:</strong> <span id="shedCAnimals">24 heads</span>
+                                </p>
+                                <p class="mb-0">
+                                    <i class="fas fa-clock text-muted me-2"></i>
+                                    <strong>Last Check:</strong> <span class="text-muted">2 min ago</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-md-6 col-lg-3">
+                    <div class="card card-enhanced h-100 border-0 shadow">
+                        <div class="card-body text-center">
+                            <div class="mb-3">
+                                <i class="fas fa-warehouse fa-3x text-success"></i>
+                            </div>
+                            <h5 class="card-title">Shed D - Produce</h5>
+                            <div class="mb-3">
+                                <span class="badge bg-success fs-6">
+                                    <i class="fas fa-check-circle me-1"></i>
+                                    Operational
+                                </span>
+                            </div>
+                            <div class="text-start">
+                                <p class="mb-2">
+                                    <i class="fas fa-thermometer-half text-danger me-2"></i>
+                                    <strong>Temp:</strong> <span id="shedDTemp">18°C</span>
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-tint text-primary me-2"></i>
+                                    <strong>Humidity:</strong> <span id="shedDHumidity">48%</span>
+                                </p>
+                                <p class="mb-2">
+                                    <i class="fas fa-apple-alt text-danger me-2"></i>
+                                    <strong>Produce:</strong> <span id="shedDProduce">850 kg</span>
+                                </p>
+                                <p class="mb-0">
+                                    <i class="fas fa-clock text-muted me-2"></i>
+                                    <strong>Last Check:</strong> <span class="text-muted">1 min ago</span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="text-center mt-4">
+                <a href="/dashboard" class="btn btn-primary btn-lg">
+                    <i class="fas fa-chart-line me-2"></i>
+                    View Full Dashboard
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- Real-time Sensor Data Section -->
     <section class="py-5">
         <div class="container">

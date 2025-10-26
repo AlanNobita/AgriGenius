@@ -1,8 +1,8 @@
 <nav class="navbar navbar-expand-lg">
   <div class="container">
-    <a class="navbar-brand" href="/">
-      <i class="fas fa-seedling"></i>
-      AgriGenius
+    <a class="navbar-brand" href="/" id="navbarBrand">
+      <i class="fas fa-seedling brand-icon"></i>
+      <span class="brand-text">AgriGenius</span>
     </a>
 
     <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
@@ -12,32 +12,32 @@
 
     <div class="collapse navbar-collapse" id="navbarContent">
       <ul class="navbar-nav me-auto">
-        <li class="nav-item">
+        <li class="nav-item me-2">
           <a class="nav-link" href="/">
             <i class="fas fa-home"></i> Home
           </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item me-2">
           <a class="nav-link" href="/articles">
             <i class="fas fa-newspaper"></i> Articles
           </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item me-2">
           <a class="nav-link" href="/documentation">
             <i class="fas fa-book"></i> Documentation
           </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item me-2">
           <a class="nav-link" href="/chat">
             <i class="fas fa-robot"></i> AI Assistant
           </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item me-2">
           <a class="nav-link" href="/marketplace">
             <i class="fas fa-store"></i> Marketplace
           </a>
         </li>
-        <li class="nav-item">
+        <li class="nav-item me-2">
           <a class="nav-link" href="/dashboard">
             <i class="fas fa-chart-line"></i> Dashboard
           </a>
@@ -55,30 +55,79 @@
 
         <!-- Notifications -->
         {% if current_user.is_authenticated %}
-        <li class="nav-item dropdown me-2">
-          <a class="nav-link position-relative" href="#" id="notificationDropdown" role="button"
+        <li class="nav-item dropdown me-2 notification-dropdown">
+          <a class="nav-link position-relative notification-bell" href="#" id="notificationDropdown" role="button"
              data-bs-toggle="dropdown" aria-expanded="false">
             <i class="fas fa-bell"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge" id="notificationCount">
               3
             </span>
           </a>
-          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="notificationDropdown">
-            <li><h6 class="dropdown-header">Notifications</h6></li>
-            <li><a class="dropdown-item" href="#">
-              <i class="fas fa-check-circle text-success"></i>
-              Article approved
-            </a></li>
-            <li><a class="dropdown-item" href="#">
-              <i class="fas fa-comment text-info"></i>
-              New comment on your post
-            </a></li>
-            <li><a class="dropdown-item" href="#">
-              <i class="fas fa-seedling text-warning"></i>
-              Sensor alert: Low soil moisture
-            </a></li>
-            <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item text-center" href="/notifications">View all</a></li>
+          <ul class="dropdown-menu dropdown-menu-end notification-menu" aria-labelledby="notificationDropdown">
+            <li class="notification-header">
+              <h6 class="dropdown-header d-flex justify-content-between align-items-center">
+                <span><i class="fas fa-bell me-2"></i>Notifications</span>
+                <button class="btn btn-sm btn-link text-primary mark-all-read" onclick="markAllAsRead()">
+                  <i class="fas fa-check-double"></i> Mark all read
+                </button>
+              </h6>
+            </li>
+            <li><hr class="dropdown-divider m-0"></li>
+            <div class="notification-list" id="notificationList">
+              <li>
+                <a class="dropdown-item notification-item unread" href="#" onclick="markAsRead(this)">
+                  <div class="notification-icon bg-success">
+                    <i class="fas fa-check-circle"></i>
+                  </div>
+                  <div class="notification-content">
+                    <div class="notification-title">Article approved</div>
+                    <div class="notification-time">2 minutes ago</div>
+                  </div>
+                  <div class="notification-dot"></div>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item notification-item unread" href="#" onclick="markAsRead(this)">
+                  <div class="notification-icon bg-info">
+                    <i class="fas fa-comment"></i>
+                  </div>
+                  <div class="notification-content">
+                    <div class="notification-title">New comment on your post</div>
+                    <div class="notification-time">15 minutes ago</div>
+                  </div>
+                  <div class="notification-dot"></div>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item notification-item unread" href="#" onclick="markAsRead(this)">
+                  <div class="notification-icon bg-warning">
+                    <i class="fas fa-seedling"></i>
+                  </div>
+                  <div class="notification-content">
+                    <div class="notification-title">Sensor alert: Low soil moisture</div>
+                    <div class="notification-time">1 hour ago</div>
+                  </div>
+                  <div class="notification-dot"></div>
+                </a>
+              </li>
+              <li>
+                <a class="dropdown-item notification-item" href="#" onclick="markAsRead(this)">
+                  <div class="notification-icon bg-primary">
+                    <i class="fas fa-heart"></i>
+                  </div>
+                  <div class="notification-content">
+                    <div class="notification-title">Someone liked your article</div>
+                    <div class="notification-time">3 hours ago</div>
+                  </div>
+                </a>
+              </li>
+            </div>
+            <li><hr class="dropdown-divider m-0"></li>
+            <li>
+              <a class="dropdown-item text-center view-all-notifications" href="/notifications">
+                <i class="fas fa-arrow-right me-2"></i>View all notifications
+              </a>
+            </li>
           </ul>
         </li>
         {% endif %}
@@ -92,37 +141,75 @@
 
         {% if current_user.is_authenticated %}
         <!-- User menu -->
-        <li class="nav-item dropdown">
-          <a class="nav-link dropdown-toggle d-flex align-items-center" href="#" id="userDropdown"
+        <li class="nav-item dropdown user-dropdown">
+          <a class="nav-link dropdown-toggle d-flex align-items-center user-menu-toggle" href="#" id="userDropdown"
              role="button" data-bs-toggle="dropdown" aria-expanded="false">
-            <img src="https://ui-avatars.com/api/?name={{ current_user.username }}&background=2e7d32&color=fff&size=32"
-                 alt="Avatar" class="user-avatar me-2">
-            <span class="d-none d-md-inline">{{ current_user.username }}</span>
+            <div class="user-avatar-wrapper">
+              <img src="https://ui-avatars.com/api/?name={{ current_user.username }}&background=2e7d32&color=fff&size=40"
+                   alt="Avatar" class="user-avatar me-2">
+              <span class="user-status-indicator"></span>
+            </div>
+            <span class="d-none d-md-inline user-name">{{ current_user.username }}</span>
           </a>
-          <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-            <li><a class="dropdown-item" href="/profile">
-              <i class="fas fa-user"></i> Profile
-            </a></li>
-            <li><a class="dropdown-item" href="/my-posts">
-              <i class="fas fa-edit"></i> My Posts
-            </a></li>
-            <li><a class="dropdown-item" href="/user/{{ current_user.id }}">
-              <i class="fas fa-id-card"></i> Public Profile
-            </a></li>
+          <ul class="dropdown-menu dropdown-menu-end user-menu" aria-labelledby="userDropdown">
+            <li class="user-info-header">
+              <div class="d-flex align-items-center p-3">
+                <img src="https://ui-avatars.com/api/?name={{ current_user.username }}&background=2e7d32&color=fff&size=48"
+                     alt="Avatar" class="user-avatar-large me-3">
+                <div>
+                  <div class="fw-bold">{{ current_user.username }}</div>
+                  <small class="text-muted">{{ current_user.email if current_user.email else 'Member' }}</small>
+                </div>
+              </div>
+            </li>
+            <li><hr class="dropdown-divider m-0"></li>
+            <li>
+              <a class="dropdown-item user-menu-item" href="/profile">
+                <i class="fas fa-user"></i>
+                <span>Profile</span>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item user-menu-item" href="/my-posts">
+                <i class="fas fa-edit"></i>
+                <span>My Posts</span>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item user-menu-item" href="/user/{{ current_user.id }}">
+                <i class="fas fa-id-card"></i>
+                <span>Public Profile</span>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item user-menu-item" href="/notifications">
+                <i class="fas fa-bell"></i>
+                <span>Notifications</span>
+              </a>
+            </li>
             {% if current_user.is_admin %}
             <li><hr class="dropdown-divider"></li>
-            <li><h6 class="dropdown-header">Admin</h6></li>
-            <li><a class="dropdown-item" href="/admin/verify_articles">
-              <i class="fas fa-check-double"></i> Verify Articles
-            </a></li>
-            <li><a class="dropdown-item" href="/admin/verify_docs">
-              <i class="fas fa-file-check"></i> Verify Docs
-            </a></li>
+            <li><h6 class="dropdown-header text-muted"><i class="fas fa-shield-alt me-2"></i>Admin Panel</h6></li>
+            <li>
+              <a class="dropdown-item user-menu-item" href="/admin/verify_articles">
+                <i class="fas fa-check-double"></i>
+                <span>Verify Articles</span>
+              </a>
+            </li>
+            <li>
+              <a class="dropdown-item user-menu-item" href="/admin/verify_docs">
+                <i class="fas fa-file-check"></i>
+                <span>Verify Docs</span>
+              </a>
+            </li>
             {% endif %}
             <li><hr class="dropdown-divider"></li>
-            <li><a class="dropdown-item" href="/logout">
-              <i class="fas fa-sign-out-alt"></i> Sign Out
-            </a></li>
+            <li>
+              <a class="dropdown-item user-menu-item text-danger" href="/logout">
+                <i class="fas fa-sign-out-alt"></i>
+                <span>Sign Out</span>
+              </a>
+            </li>
           </ul>
         </li>
         {% else %}
@@ -144,6 +231,84 @@
 </nav>
 
 <script>
+// Notification functions
+function markAsRead(element) {
+  element.classList.remove('unread');
+  const dot = element.querySelector('.notification-dot');
+  if (dot) {
+    dot.remove();
+  }
+  updateNotificationCount();
+}
+
+function markAllAsRead() {
+  const unreadNotifications = document.querySelectorAll('.notification-item.unread');
+  unreadNotifications.forEach(notification => {
+    notification.classList.remove('unread');
+    const dot = notification.querySelector('.notification-dot');
+    if (dot) {
+      dot.remove();
+    }
+  });
+  updateNotificationCount();
+}
+
+function updateNotificationCount() {
+  const unreadCount = document.querySelectorAll('.notification-item.unread').length;
+  const badge = document.getElementById('notificationCount');
+  if (badge) {
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount;
+      badge.style.display = 'inline-block';
+    } else {
+      badge.style.display = 'none';
+    }
+  }
+}
+
+// Filter notifications
+function filterNotifications(type) {
+  const notifications = document.querySelectorAll('.notification-item');
+  const filterBtns = document.querySelectorAll('.notification-filters .btn');
+
+  // Update active button
+  filterBtns.forEach(btn => btn.classList.remove('active'));
+  event.target.classList.add('active');
+
+  // Filter notifications
+  notifications.forEach(notification => {
+    if (type === 'all') {
+      notification.parentElement.style.display = 'block';
+    } else if (type === 'unread') {
+      notification.parentElement.style.display = notification.classList.contains('unread') ? 'block' : 'none';
+    } else {
+      const notifType = notification.getAttribute('data-type');
+      notification.parentElement.style.display = notifType === type ? 'block' : 'none';
+    }
+  });
+}
+
+// Delete notification
+function deleteNotification(element) {
+  const notification = element.closest('.notification-item').parentElement;
+  notification.style.animation = 'slideOutRight 0.3s ease-out';
+  setTimeout(() => {
+    notification.remove();
+    updateNotificationCount();
+  }, 300);
+}
+
+// Snooze notification
+function snoozeNotification(element) {
+  const notification = element.closest('.notification-item');
+  notification.classList.add('snoozed');
+  notification.style.opacity = '0.5';
+  setTimeout(() => {
+    notification.classList.remove('snoozed');
+    notification.style.opacity = '1';
+  }, 3600000); // 1 hour
+}
+
 document.addEventListener('DOMContentLoaded', function() {
   // Theme toggle functionality
   const themeToggle = document.getElementById('themeToggle');
@@ -221,10 +386,33 @@ document.addEventListener('DOMContentLoaded', function() {
       }
     });
   });
+
+  // Notification bell animation
+  const notificationBell = document.querySelector('.notification-bell');
+  if (notificationBell) {
+    notificationBell.addEventListener('click', function() {
+      this.querySelector('i').classList.add('fa-shake');
+      setTimeout(() => {
+        this.querySelector('i').classList.remove('fa-shake');
+      }, 500);
+    });
+  }
+
+  // User dropdown animation
+  const userDropdown = document.getElementById('userDropdown');
+  if (userDropdown) {
+    userDropdown.addEventListener('show.bs.dropdown', function() {
+      this.querySelector('.user-avatar').style.transform = 'scale(1.1)';
+    });
+    userDropdown.addEventListener('hide.bs.dropdown', function() {
+      this.querySelector('.user-avatar').style.transform = 'scale(1)';
+    });
+  }
 });
 
-// Add CSS for weather widget
-const weatherStyles = `
+// Add CSS for enhanced navbar components
+const navbarStyles = `
+  /* Weather Widget */
   .weather-widget {
     display: flex;
     align-items: center;
@@ -234,6 +422,12 @@ const weatherStyles = `
     border-radius: var(--radius-lg);
     font-size: 0.875rem;
     color: var(--text-secondary);
+    transition: all 0.3s ease;
+  }
+
+  .weather-widget:hover {
+    background: var(--very-light-green);
+    transform: translateY(-2px);
   }
 
   .weather-temp {
@@ -242,11 +436,254 @@ const weatherStyles = `
 
   .weather-icon {
     color: var(--primary-green);
+    transition: all 0.3s ease;
+  }
+
+  /* Notification Dropdown */
+  .notification-dropdown .dropdown-menu {
+    width: 380px;
+    max-height: 500px;
+    overflow-y: auto;
+    padding: 0;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .notification-header {
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+    z-index: 10;
+  }
+
+  .notification-header .dropdown-header {
+    padding: 1rem;
+    margin: 0;
+    font-weight: 600;
+    color: var(--text-primary);
+  }
+
+  .mark-all-read {
+    font-size: 0.75rem;
+    padding: 0.25rem 0.5rem;
+    text-decoration: none;
+  }
+
+  .mark-all-read:hover {
+    text-decoration: underline;
+  }
+
+  .notification-list {
+    max-height: 350px;
+    overflow-y: auto;
+  }
+
+  .notification-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    position: relative;
+    border-left: 3px solid transparent;
+  }
+
+  .notification-item:hover {
+    background: var(--very-light-green);
+    border-left-color: var(--primary-green);
+  }
+
+  .notification-item.unread {
+    background: rgba(46, 125, 50, 0.05);
+  }
+
+  .notification-icon {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    flex-shrink: 0;
+  }
+
+  .notification-content {
+    flex: 1;
+  }
+
+  .notification-title {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-primary);
+    margin-bottom: 0.25rem;
+  }
+
+  .notification-time {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+  }
+
+  .notification-dot {
+    width: 8px;
+    height: 8px;
+    background: var(--primary-green);
+    border-radius: 50%;
+    flex-shrink: 0;
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% {
+      opacity: 1;
+      transform: scale(1);
+    }
+    50% {
+      opacity: 0.5;
+      transform: scale(1.2);
+    }
+  }
+
+  .view-all-notifications {
+    padding: 0.75rem;
+    font-weight: 600;
+    color: var(--primary-green);
+    transition: all 0.3s ease;
+  }
+
+  .view-all-notifications:hover {
+    background: var(--very-light-green);
+  }
+
+  .notification-bell {
+    position: relative;
+    transition: all 0.3s ease;
+  }
+
+  .notification-bell:hover {
+    transform: scale(1.1);
+  }
+
+  .notification-badge {
+    animation: bounce 2s infinite;
+  }
+
+  @keyframes bounce {
+    0%, 100% {
+      transform: translate(-50%, -50%) scale(1);
+    }
+    50% {
+      transform: translate(-50%, -50%) scale(1.1);
+    }
+  }
+
+  /* User Dropdown */
+  .user-dropdown .dropdown-menu {
+    width: 280px;
+    padding: 0;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+  }
+
+  .user-info-header {
+    background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+    color: white;
+  }
+
+  .user-avatar-wrapper {
+    position: relative;
+  }
+
+  .user-avatar {
+    transition: all 0.3s ease;
+    border: 2px solid var(--primary-green);
+  }
+
+  .user-avatar-large {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    border: 2px solid white;
+  }
+
+  .user-status-indicator {
+    position: absolute;
+    bottom: 2px;
+    right: 8px;
+    width: 10px;
+    height: 10px;
+    background: #4caf50;
+    border: 2px solid white;
+    border-radius: 50%;
+    animation: pulse 2s infinite;
+  }
+
+  .user-menu-toggle:hover .user-avatar {
+    transform: scale(1.1);
+  }
+
+  .user-name {
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .user-menu-item {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem 1rem;
+    transition: all 0.3s ease;
+    border-left: 3px solid transparent;
+  }
+
+  .user-menu-item:hover {
+    background: var(--very-light-green);
+    border-left-color: var(--primary-green);
+    padding-left: 1.25rem;
+  }
+
+  .user-menu-item i {
+    width: 20px;
+    text-align: center;
+    color: var(--text-secondary);
+  }
+
+  .user-menu-item:hover i {
+    color: var(--primary-green);
+  }
+
+  .user-menu-item.text-danger:hover {
+    background: rgba(244, 67, 54, 0.1);
+    border-left-color: #f44336;
+  }
+
+  .user-menu-item.text-danger:hover i {
+    color: #f44336;
+  }
+
+  /* Scrollbar styling for dropdowns */
+  .notification-list::-webkit-scrollbar,
+  .notification-menu::-webkit-scrollbar {
+    width: 6px;
+  }
+
+  .notification-list::-webkit-scrollbar-track,
+  .notification-menu::-webkit-scrollbar-track {
+    background: var(--bg-secondary);
+  }
+
+  .notification-list::-webkit-scrollbar-thumb,
+  .notification-menu::-webkit-scrollbar-thumb {
+    background: var(--primary-green);
+    border-radius: 3px;
+  }
+
+  .notification-list::-webkit-scrollbar-thumb:hover,
+  .notification-menu::-webkit-scrollbar-thumb:hover {
+    background: var(--secondary-green);
   }
 `;
 
-// Inject weather styles
+// Inject navbar styles
 const styleSheet = document.createElement('style');
-styleSheet.textContent = weatherStyles;
+styleSheet.textContent = navbarStyles;
 document.head.appendChild(styleSheet);
 </script>
