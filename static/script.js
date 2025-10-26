@@ -5,9 +5,8 @@ const promptInput = promptForm.querySelector(".prompt-input");
 const fileInput = promptForm.querySelector("#file-input");
 const fileUploadWrapper = promptForm.querySelector(".file-upload-wrapper");
 
-// Api setup
-const API_KEY = "AIzaSyCUkHEl4eGnQ_qkYau6dRNfOGAjV9tIdXE";
-const API_URL = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${API_KEY}`;
+// This file is deprecated - chat functionality moved to chat.html
+// API calls now go through Flask backend for security
 
 let userMessage = "";
 const chatHistory = [];
