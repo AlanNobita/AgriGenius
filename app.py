@@ -32,6 +32,7 @@ Compress(app)
 # OpenRouter API Configuration
 OPENROUTER_MODEL = 'meta-llama/llama-4-maverick:free'  # Default model
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
+OPENROUTER_API_KEY = Config.OPENROUTER_API_KEY
 
 # Initialize extensions
 db = SQLAlchemy(app)
@@ -2368,9 +2369,10 @@ def get_current_mode():
         app.logger.error(f'Error getting current mode: {str(e)}')
         return jsonify({'error': 'Failed to get current mode'}), 500
 
-# Initialize AI modes on app startup
-with app.app_context():
-    initialize_ai_modes()
+# Initialize AI modes on app startup (will be called after db creation)
+def initialize_app():
+    with app.app_context():
+        initialize_ai_modes()
 
 def get_mode_instructions(mode_name):
     """Get mode-specific instructions for AI behavior"""

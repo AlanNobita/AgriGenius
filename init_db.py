@@ -12,7 +12,7 @@ from werkzeug.security import generate_password_hash
 # Add the current directory to Python path
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
 
-from app import app, db, User, Article, Documentation, Conversation, ChatMessage, UserMemory
+from app import app, db, User, Article, Documentation, Conversation, ChatMessage, UserMemory, initialize_app
 
 
 def init_database():
@@ -24,6 +24,11 @@ def init_database():
             # Create all tables
             db.create_all()
             print("✅ Database tables created successfully!")
+            
+            # Initialize AI modes after database creation
+            initialize_app()
+            print("✅ AI modes initialized successfully!")
+            
             return True
         except Exception as e:
             print(f"❌ Error creating database tables: {e}")

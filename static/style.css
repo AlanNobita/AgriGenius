@@ -184,6 +184,8 @@ body[data-theme="dark"] {
     background: var(--glass-bg);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    -moz-backdrop-filter: blur(10px);
+    -ms-backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border);
     box-shadow: var(--glass-shadow);
 }
@@ -192,6 +194,8 @@ body[data-theme="dark"] {
     background: linear-gradient(135deg, rgba(255, 255, 255, 0.1) 0%, rgba(255, 255, 255, 0.05) 100%);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    -moz-backdrop-filter: blur(10px);
+    -ms-backdrop-filter: blur(10px);
     border: 1px solid rgba(255, 255, 255, 0.2);
     box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
 }
@@ -200,6 +204,8 @@ body[data-theme="dark"] {
     background: var(--glass-bg-dark);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
+    -moz-backdrop-filter: blur(10px);
+    -ms-backdrop-filter: blur(10px);
     border: 1px solid var(--glass-border-dark);
     box-shadow: var(--glass-shadow-dark);
 }
@@ -637,10 +643,6 @@ body[data-theme="dark"] {
 }
 
 /* Professional Animations */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
 
 @keyframes slideInUp {
     from {
@@ -749,7 +751,16 @@ body[data-theme="dark"] {
 
 /* Enhanced Animation Classes */
 .animate-fade-in {
-    animation: fadeIn var(--transition-normal) ease-out;
+    animation: fadeIn 0.6s ease-out;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+    to {
+        opacity: 1;
+    }
 }
 
 .animate-slide-in-up {
@@ -1980,23 +1991,6 @@ a:hover {
     background-clip: text;
 }
 
-.navbar-nav .nav-link {
-    font-weight: 500;
-    color: var(--text-secondary) !important;
-    padding: var(--spacing-sm) var(--spacing-md) !important;
-    border-radius: var(--radius-md);
-    transition: all 0.3s ease;
-}
-
-.navbar-nav .nav-link:hover {
-    color: var(--primary-green) !important;
-    background-color: var(--bg-hover);
-}
-
-.navbar-nav .nav-link.active {
-    color: var(--primary-green) !important;
-    background-color: var(--very-light-green);
-}
 
 /* Theme Toggle */
 .theme-toggle {
@@ -2200,6 +2194,8 @@ a:hover {
         gap: 0.5rem;
         touch-action: manipulation;
         -webkit-tap-highlight-color: transparent;
+        contain: layout style paint;
+        will-change: transform;
     }
     
     .btn-xs {
@@ -2767,21 +2763,7 @@ footer {
 }
 
 /* Animations */
-@keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-}
 
-@keyframes slideInUp {
-    from {
-        opacity: 0;
-        transform: translateY(30px);
-    }
-    to {
-        opacity: 1;
-        transform: translateY(0);
-    }
-}
 
 @keyframes spin {
     0% { transform: rotate(0deg); }
@@ -3748,12 +3730,30 @@ body[data-theme="dark"] .text-secondary {
     max-width: 1400px;
     padding-left: 1rem;
     padding-right: 1rem;
+    margin-left: auto;
+    margin-right: auto;
+    box-sizing: border-box;
 }
 
 @media (min-width: 1200px) {
     .container {
         padding-left: 2rem;
         padding-right: 2rem;
+    }
+}
+
+/* Responsive Container Adjustments */
+@media (max-width: 768px) {
+    .container {
+        padding-left: 0.75rem;
+        padding-right: 0.75rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .container {
+        padding-left: 0.5rem;
+        padding-right: 0.5rem;
     }
 }
 
