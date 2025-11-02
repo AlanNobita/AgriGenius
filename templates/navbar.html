@@ -1,212 +1,274 @@
-<nav class="navbar navbar-expand-lg">
+<nav class="navbar navbar-expand-lg glass-effect-rainbow bg-gradient-forest" id="mainNavbar">
   <div class="container">
-    <a class="navbar-brand" href="/" id="navbarBrand">
-      <i class="fas fa-seedling brand-icon"></i>
-      <span class="brand-text">AgriGenius</span>
+    <a class="navbar-brand interactive-glow" href="/" id="navbarBrand">
+      <div class="brand-logo">
+        <i class="fas fa-leaf brand-icon"></i>
+        <span class="brand-name">AgriGenius</span>
+      </div>
     </a>
 
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
+    <button class="navbar-toggler interactive-glow" type="button" data-bs-toggle="collapse" data-bs-target="#navbarContent"
             aria-controls="navbarContent" aria-expanded="false" aria-label="Toggle navigation">
       <span class="navbar-toggler-icon"></span>
+      <div class="toggler-indicator"></div>
     </button>
 
     <div class="collapse navbar-collapse" id="navbarContent">
+
       <ul class="navbar-nav me-auto">
         <li class="nav-item me-2">
-          <a class="nav-link" href="/">
-            <i class="fas fa-home"></i> Home
+          <a class="nav-link interactive-glow animate-red" href="/">
+            <i class="fas fa-home animate-pulse-glow"></i> Home
           </a>
         </li>
         <li class="nav-item me-2">
-          <a class="nav-link" href="/articles">
-            <i class="fas fa-newspaper"></i> Articles
+          <a class="nav-link interactive-glow animate-blue" href="/articles">
+            <i class="fas fa-newspaper animate-pulse-glow"></i> Articles
           </a>
         </li>
         <li class="nav-item me-2">
-          <a class="nav-link" href="/documentation">
-            <i class="fas fa-book"></i> Documentation
+          <a class="nav-link interactive-glow animate-green" href="/documentation">
+            <i class="fas fa-book animate-pulse-glow"></i> Documentation
           </a>
         </li>
         <li class="nav-item me-2">
-          <a class="nav-link" href="/chat">
-            <i class="fas fa-robot"></i> AI Assistant
+          <a class="nav-link interactive-glow animate-purple" href="/chat">
+            <i class="fas fa-robot animate-pulse-glow"></i> AI Assistant
           </a>
         </li>
         <li class="nav-item me-2">
-          <a class="nav-link" href="/marketplace">
-            <i class="fas fa-store"></i> Marketplace
+          <a class="nav-link interactive-glow animate-orange" href="/marketplace">
+            <i class="fas fa-store animate-pulse-glow"></i> Marketplace
           </a>
         </li>
         <li class="nav-item me-2">
-          <a class="nav-link" href="/dashboard">
-            <i class="fas fa-chart-line"></i> Dashboard
+          <a class="nav-link interactive-glow animate-pink" href="/dashboard">
+            <i class="fas fa-chart-line animate-pulse-glow"></i> Dashboard
           </a>
+        </li>
+        
+        <!-- Enhanced Dropdown Menu -->
+        <li class="nav-item dropdown me-2">
+          <a class="nav-link dropdown-toggle interactive-glow animate-teal" href="#" id="navbarDropdown" role="button" data-bs-toggle="dropdown" aria-expanded="false">
+            <i class="fas fa-leaf animate-pulse-glow"></i> More
+          </a>
+          <ul class="dropdown-menu dropdown-menu-end glass-effect-rainbow" aria-labelledby="navbarDropdown">
+            <li><a class="dropdown-item interactive-glow" href="/community"><i class="fas fa-users animate-blue"></i> Community</a></li>
+            <li><a class="dropdown-item interactive-glow" href="/tutorials"><i class="fas fa-graduation-cap animate-green"></i> Tutorials</a></li>
+            <li><a class="dropdown-item interactive-glow" href="/resources"><i class="fas fa-folder-open animate-yellow"></i> Resources</a></li>
+            <li><hr class="dropdown-divider"></li>
+            <li><a class="dropdown-item interactive-glow" href="/about"><i class="fas fa-info-circle animate-purple"></i> About Us</a></li>
+            <li><a class="dropdown-item interactive-glow" href="/contact"><i class="fas fa-envelope animate-orange"></i> Contact</a></li>
+          </ul>
         </li>
       </ul>
 
       <ul class="navbar-nav">
-        <!-- Weather Widget -->
-        <li class="nav-item me-3">
-          <div class="weather-widget d-none d-lg-block">
-            <span class="weather-temp">22°C</span>
-            <i class="fas fa-sun weather-icon"></i>
-          </div>
-        </li>
 
-        <!-- Notifications -->
+
+        <!-- Enhanced Notifications -->
         {% if current_user.is_authenticated %}
         <li class="nav-item dropdown me-2 notification-dropdown">
-          <a class="nav-link position-relative notification-bell" href="#" id="notificationDropdown" role="button"
+          <a class="nav-link position-relative notification-bell interactive-glow" href="#" id="notificationDropdown" role="button"
              data-bs-toggle="dropdown" aria-expanded="false">
-            <i class="fas fa-bell"></i>
-            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger notification-badge" id="notificationCount">
+            <i class="fas fa-bell animate-pulse-glow"></i>
+            <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-gradient-danger notification-badge interactive-glow animate-bounce-in" id="notificationCount">
               3
             </span>
+            <div class="notification-pulse"></div>
           </a>
-          <ul class="dropdown-menu dropdown-menu-end notification-menu" aria-labelledby="notificationDropdown">
+          <ul class="dropdown-menu dropdown-menu-end notification-menu glass-effect-rainbow" aria-labelledby="notificationDropdown">
             <li class="notification-header">
               <h6 class="dropdown-header d-flex justify-content-between align-items-center">
-                <span><i class="fas fa-bell me-2"></i>Notifications</span>
-                <button class="btn btn-sm btn-link text-primary mark-all-read" onclick="markAllAsRead()">
-                  <i class="fas fa-check-double"></i> Mark all read
-                </button>
+                <span><i class="fas fa-bell me-2 animate-rainbow-shift"></i>Notifications</span>
+                <div class="notification-actions">
+                  <button class="btn btn-sm btn-link text-primary mark-all-read interactive-glow" onclick="markAllAsRead()">
+                    <i class="fas fa-check-double animate-pulse-glow"></i> Mark all read
+                  </button>
+                  <button class="btn btn-sm btn-link text-secondary settings-btn interactive-glow" onclick="openNotificationSettings()">
+                    <i class="fas fa-cog animate-pulse-glow"></i>
+                  </button>
+                </div>
               </h6>
             </li>
             <li><hr class="dropdown-divider m-0"></li>
+            
+            <!-- Notification Filters -->
+            <li class="notification-filters">
+              <button class="btn btn-sm btn-outline-primary filter-btn active interactive-glow" onclick="filterNotifications('all')">
+                All
+              </button>
+              <button class="btn btn-sm btn-outline-primary filter-btn interactive-glow" onclick="filterNotifications('unread')">
+                Unread
+              </button>
+              <button class="btn btn-sm btn-outline-primary filter-btn interactive-glow" onclick="filterNotifications('alerts')">
+                Alerts
+              </button>
+              <button class="btn btn-sm btn-outline-primary filter-btn interactive-glow" onclick="filterNotifications('social')">
+                Social
+              </button>
+            </li>
+            
+            <li><hr class="dropdown-divider m-0"></li>
             <div class="notification-list" id="notificationList">
               <li>
-                <a class="dropdown-item notification-item unread" href="#" onclick="markAsRead(this)">
-                  <div class="notification-icon bg-success">
-                    <i class="fas fa-check-circle"></i>
+                <a class="dropdown-item notification-item unread interactive-glow animate-fade-in" href="#" onclick="markAsRead(this)" data-type="alerts">
+                  <div class="notification-icon bg-gradient-success animate-emerald">
+                    <i class="fas fa-check-circle animate-pulse-glow"></i>
                   </div>
                   <div class="notification-content">
                     <div class="notification-title">Article approved</div>
                     <div class="notification-time">2 minutes ago</div>
+                    <div class="notification-description">Your article "Modern Farming Techniques" has been approved by our team.</div>
                   </div>
                   <div class="notification-dot"></div>
+                  <div class="notification-actions">
+                    <button class="btn btn-sm btn-link text-secondary snooze-btn interactive-glow" onclick="snoozeNotification(this)">
+                      <i class="fas fa-clock"></i>
+                    </button>
+                  </div>
                 </a>
               </li>
               <li>
-                <a class="dropdown-item notification-item unread" href="#" onclick="markAsRead(this)">
-                  <div class="notification-icon bg-info">
-                    <i class="fas fa-comment"></i>
+                <a class="dropdown-item notification-item unread interactive-glow animate-fade-in" href="#" onclick="markAsRead(this)" data-type="social">
+                  <div class="notification-icon bg-gradient-info animate-blue">
+                    <i class="fas fa-comment animate-pulse-glow"></i>
                   </div>
                   <div class="notification-content">
                     <div class="notification-title">New comment on your post</div>
                     <div class="notification-time">15 minutes ago</div>
+                    <div class="notification-description">John commented: "Great insights! This really helped my farm."</div>
                   </div>
                   <div class="notification-dot"></div>
+                  <div class="notification-actions">
+                    <button class="btn btn-sm btn-link text-secondary snooze-btn interactive-glow" onclick="snoozeNotification(this)">
+                      <i class="fas fa-clock"></i>
+                    </button>
+                  </div>
                 </a>
               </li>
               <li>
-                <a class="dropdown-item notification-item unread" href="#" onclick="markAsRead(this)">
-                  <div class="notification-icon bg-warning">
-                    <i class="fas fa-seedling"></i>
+                <a class="dropdown-item notification-item unread interactive-glow animate-fade-in" href="#" onclick="markAsRead(this)" data-type="alerts">
+                  <div class="notification-icon bg-gradient-warning animate-orange">
+                    <i class="fas fa-seedling animate-pulse-glow"></i>
                   </div>
                   <div class="notification-content">
                     <div class="notification-title">Sensor alert: Low soil moisture</div>
                     <div class="notification-time">1 hour ago</div>
+                    <div class="notification-description">Field A soil moisture is below optimal levels. Consider irrigation.</div>
                   </div>
                   <div class="notification-dot"></div>
+                  <div class="notification-actions">
+                    <button class="btn btn-sm btn-link text-secondary snooze-btn interactive-glow" onclick="snoozeNotification(this)">
+                      <i class="fas fa-clock"></i>
+                    </button>
+                  </div>
                 </a>
               </li>
               <li>
-                <a class="dropdown-item notification-item" href="#" onclick="markAsRead(this)">
-                  <div class="notification-icon bg-primary">
-                    <i class="fas fa-heart"></i>
+                <a class="dropdown-item notification-item interactive-glow animate-fade-in" href="#" onclick="markAsRead(this)" data-type="social">
+                  <div class="notification-icon bg-gradient-primary animate-purple">
+                    <i class="fas fa-heart animate-pulse-glow"></i>
                   </div>
                   <div class="notification-content">
                     <div class="notification-title">Someone liked your article</div>
                     <div class="notification-time">3 hours ago</div>
+                    <div class="notification-description">Sarah and 12 others liked your article "Sustainable Agriculture".</div>
+                  </div>
+                  <div class="notification-actions">
+                    <button class="btn btn-sm btn-link text-secondary delete-btn interactive-glow" onclick="deleteNotification(this)">
+                      <i class="fas fa-trash"></i>
+                    </button>
                   </div>
                 </a>
               </li>
             </div>
             <li><hr class="dropdown-divider m-0"></li>
             <li>
-              <a class="dropdown-item text-center view-all-notifications" href="/notifications">
-                <i class="fas fa-arrow-right me-2"></i>View all notifications
+              <a class="dropdown-item text-center view-all-notifications interactive-glow animate-bounce-in" href="/notifications">
+                <i class="fas fa-arrow-right me-2 animate-pulse-glow"></i>View all notifications
               </a>
             </li>
           </ul>
         </li>
         {% endif %}
 
-        <!-- Theme toggle -->
+        <!-- Enhanced Theme toggle with system preference detection -->
         <li class="nav-item me-2">
-          <button class="btn theme-toggle" id="themeToggle" type="button" title="Toggle theme">
-            <i class="fas fa-moon"></i>
+          <button class="btn theme-toggle interactive-glow animate-tilt" id="themeToggle" type="button" title="Toggle theme">
+            <i class="fas fa-moon theme-icon animate-pulse-glow" id="themeIcon"></i>
+            <span class="theme-text ms-1 d-none d-sm-inline" id="themeText">Dark</span>
           </button>
         </li>
 
         {% if current_user.is_authenticated %}
         <!-- User menu -->
         <li class="nav-item dropdown user-dropdown">
-          <a class="nav-link dropdown-toggle d-flex align-items-center user-menu-toggle" href="#" id="userDropdown"
+          <a class="nav-link dropdown-toggle d-flex align-items-center user-menu-toggle interactive-rainbow" href="#" id="userDropdown"
              role="button" data-bs-toggle="dropdown" aria-expanded="false">
             <div class="user-avatar-wrapper">
               <img src="https://ui-avatars.com/api/?name={{ current_user.username }}&background=2e7d32&color=fff&size=40"
-                   alt="Avatar" class="user-avatar me-2">
-              <span class="user-status-indicator"></span>
+                   alt="Avatar" class="user-avatar me-2 animate-pulse-glow">
+              <span class="user-status-indicator animate-pulse-glow"></span>
             </div>
-            <span class="d-none d-md-inline user-name">{{ current_user.username }}</span>
+            <span class="d-none d-md-inline user-name animate-rainbow-shift">{{ current_user.username }}</span>
           </a>
-          <ul class="dropdown-menu dropdown-menu-end user-menu" aria-labelledby="userDropdown">
+          <ul class="dropdown-menu dropdown-menu-end user-menu glass-effect-rainbow" aria-labelledby="userDropdown">
             <li class="user-info-header">
               <div class="d-flex align-items-center p-3">
                 <img src="https://ui-avatars.com/api/?name={{ current_user.username }}&background=2e7d32&color=fff&size=48"
-                     alt="Avatar" class="user-avatar-large me-3">
+                     alt="Avatar" class="user-avatar-large me-3 animate-pulse-glow">
                 <div>
-                  <div class="fw-bold">{{ current_user.username }}</div>
+                  <div class="fw-bold animate-rainbow-shift">{{ current_user.username }}</div>
                   <small class="text-muted">{{ current_user.email if current_user.email else 'Member' }}</small>
                 </div>
               </div>
             </li>
             <li><hr class="dropdown-divider m-0"></li>
             <li>
-              <a class="dropdown-item user-menu-item" href="/profile">
-                <i class="fas fa-user"></i>
+              <a class="dropdown-item user-menu-item interactive-rainbow animate-bounce-in" href="/profile">
+                <i class="fas fa-user animate-emerald"></i>
                 <span>Profile</span>
               </a>
             </li>
             <li>
-              <a class="dropdown-item user-menu-item" href="/my-posts">
-                <i class="fas fa-edit"></i>
+              <a class="dropdown-item user-menu-item interactive-rainbow animate-bounce-in" href="/my-posts">
+                <i class="fas fa-edit animate-blue"></i>
                 <span>My Posts</span>
               </a>
             </li>
             <li>
-              <a class="dropdown-item user-menu-item" href="/user/{{ current_user.id }}">
-                <i class="fas fa-id-card"></i>
+              <a class="dropdown-item user-menu-item interactive-rainbow animate-bounce-in" href="/user/{{ current_user.id }}">
+                <i class="fas fa-id-card animate-green"></i>
                 <span>Public Profile</span>
               </a>
             </li>
             <li>
-              <a class="dropdown-item user-menu-item" href="/notifications">
-                <i class="fas fa-bell"></i>
+              <a class="dropdown-item user-menu-item interactive-rainbow animate-bounce-in" href="/notifications">
+                <i class="fas fa-bell animate-purple"></i>
                 <span>Notifications</span>
               </a>
             </li>
             {% if current_user.is_admin %}
             <li><hr class="dropdown-divider"></li>
-            <li><h6 class="dropdown-header text-muted"><i class="fas fa-shield-alt me-2"></i>Admin Panel</h6></li>
+            <li><h6 class="dropdown-header text-muted"><i class="fas fa-shield-alt me-2 animate-rainbow-shift"></i>Admin Panel</h6></li>
             <li>
-              <a class="dropdown-item user-menu-item" href="/admin/verify_articles">
-                <i class="fas fa-check-double"></i>
+              <a class="dropdown-item user-menu-item interactive-rainbow animate-bounce-in" href="/admin/verify_articles">
+                <i class="fas fa-check-double animate-orange"></i>
                 <span>Verify Articles</span>
               </a>
             </li>
             <li>
-              <a class="dropdown-item user-menu-item" href="/admin/verify_docs">
-                <i class="fas fa-file-check"></i>
+              <a class="dropdown-item user-menu-item interactive-rainbow animate-bounce-in" href="/admin/verify_docs">
+                <i class="fas fa-file-check animate-pink"></i>
                 <span>Verify Docs</span>
               </a>
             </li>
             {% endif %}
             <li><hr class="dropdown-divider"></li>
             <li>
-              <a class="dropdown-item user-menu-item text-danger" href="/logout">
-                <i class="fas fa-sign-out-alt"></i>
+              <a class="dropdown-item user-menu-item text-danger interactive-rainbow animate-bounce-in" href="/logout">
+                <i class="fas fa-sign-out-alt animate-red"></i>
                 <span>Sign Out</span>
               </a>
             </li>
@@ -215,13 +277,13 @@
         {% else %}
         <!-- Guest menu -->
         <li class="nav-item">
-          <a class="btn btn-outline-primary me-2" href="/login">
-            <i class="fas fa-sign-in-alt"></i> Login
+          <a class="btn btn-outline-primary me-2 interactive-rainbow animate-bounce-in" href="/login">
+            <i class="fas fa-sign-in-alt animate-pulse-glow"></i> Login
           </a>
         </li>
         <li class="nav-item">
-          <a class="btn btn-primary" href="/signup">
-            <i class="fas fa-user-plus"></i> Sign Up
+          <a class="btn btn-primary interactive-rainbow animate-bounce-in" href="/signup">
+            <i class="fas fa-user-plus animate-pulse-glow"></i> Sign Up
           </a>
         </li>
         {% endif %}
@@ -231,6 +293,7 @@
 </nav>
 
 <script>
+
 // Notification functions
 function markAsRead(element) {
   element.classList.remove('unread');
@@ -310,26 +373,71 @@ function snoozeNotification(element) {
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-  // Theme toggle functionality
+  // Enhanced Theme toggle functionality with system preference detection
   const themeToggle = document.getElementById('themeToggle');
-  const themeIcon = themeToggle.querySelector('i');
-  const savedTheme = localStorage.getItem('theme') || 'light';
+  const themeIcon = document.getElementById('themeIcon');
+  const themeText = document.getElementById('themeText');
+  const navbar = document.getElementById('mainNavbar');
+  
+  // Get saved theme or detect system preference
+  const savedTheme = localStorage.getItem('theme');
+  const systemPrefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initialTheme = savedTheme || (systemPrefersDark ? 'dark' : 'light');
 
-  // Apply saved theme
-  document.body.setAttribute('data-theme', savedTheme);
-  updateThemeIcon(savedTheme);
+  // Apply initial theme
+  applyTheme(initialTheme);
+  
+  // Listen for system preference changes
+  window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+    if (!savedTheme) { // Only auto-change if user hasn't manually set preference
+      applyTheme(e.matches ? 'dark' : 'light');
+    }
+  });
 
   themeToggle.addEventListener('click', function() {
     const currentTheme = document.body.getAttribute('data-theme');
     const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
-
-    document.body.setAttribute('data-theme', newTheme);
+    
+    // Save user preference
     localStorage.setItem('theme', newTheme);
-    updateThemeIcon(newTheme);
+    applyTheme(newTheme);
+    
+    // Add animation effect
+    themeToggle.style.transform = 'rotate(180deg)';
+    setTimeout(() => {
+      themeToggle.style.transform = 'rotate(0deg)';
+    }, 300);
   });
 
-  function updateThemeIcon(theme) {
-    themeIcon.className = theme === 'dark' ? 'fas fa-sun' : 'fas fa-moon';
+  function applyTheme(theme) {
+    document.body.setAttribute('data-theme', theme);
+    updateThemeUI(theme);
+    
+    // Add theme transition animation
+    document.body.style.transition = 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)';
+    
+    // Update navbar glass effect based on theme
+    if (theme === 'dark') {
+      navbar.classList.remove('glass-effect-rainbow');
+      navbar.classList.add('glass-effect-dark-2');
+    } else {
+      navbar.classList.remove('glass-effect-dark-2');
+      navbar.classList.add('glass-effect-rainbow');
+    }
+  }
+
+  function updateThemeUI(theme) {
+    if (theme === 'dark') {
+      themeIcon.className = 'fas fa-sun theme-icon animate-pulse-glow';
+      themeText.textContent = 'Light';
+      themeToggle.classList.add('btn-gradient-primary');
+      themeToggle.classList.remove('btn-outline-primary');
+    } else {
+      themeIcon.className = 'fas fa-moon theme-icon animate-pulse-glow';
+      themeText.textContent = 'Dark';
+      themeToggle.classList.remove('btn-gradient-primary');
+      themeToggle.classList.add('btn-outline-primary');
+    }
   }
 
   // Active nav link highlighting
@@ -342,25 +450,6 @@ document.addEventListener('DOMContentLoaded', function() {
     }
   });
 
-  // Weather widget (mock data)
-  function updateWeather() {
-    const weatherWidget = document.querySelector('.weather-widget');
-    if (weatherWidget) {
-      // Mock weather data - in real app, fetch from weather API
-      const temps = [18, 22, 25, 28, 24, 20];
-      const icons = ['fa-sun', 'fa-cloud-sun', 'fa-cloud', 'fa-cloud-rain'];
-
-      const temp = temps[Math.floor(Math.random() * temps.length)];
-      const icon = icons[Math.floor(Math.random() * icons.length)];
-
-      weatherWidget.querySelector('.weather-temp').textContent = `${temp}°C`;
-      weatherWidget.querySelector('.weather-icon').className = `fas ${icon} weather-icon`;
-    }
-  }
-
-  // Update weather every 5 minutes
-  updateWeather();
-  setInterval(updateWeather, 300000);
 
   // Smooth scrolling for anchor links
   document.querySelectorAll('a[href^="#"]').forEach(anchor => {
@@ -410,33 +499,36 @@ document.addEventListener('DOMContentLoaded', function() {
   }
 });
 
-// Add CSS for enhanced navbar components
+// Add CSS for simplified navbar components
 const navbarStyles = `
-  /* Weather Widget */
-  .weather-widget {
+  /* Simplified Brand Logo */
+  .brand-logo {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.5rem 1rem;
-    background: var(--bg-tertiary);
-    border-radius: var(--radius-lg);
-    font-size: 0.875rem;
-    color: var(--text-secondary);
-    transition: all 0.3s ease;
-  }
-
-  .weather-widget:hover {
-    background: var(--very-light-green);
-    transform: translateY(-2px);
-  }
-
-  .weather-temp {
-    font-weight: 600;
-  }
-
-  .weather-icon {
+    font-weight: 700;
+    font-size: 1.5rem;
     color: var(--primary-green);
     transition: all 0.3s ease;
+  }
+
+  .brand-logo:hover {
+    transform: scale(1.05);
+  }
+
+  .brand-icon {
+    font-size: 1.8rem;
+    color: var(--primary-green);
+    transition: all 0.3s ease;
+  }
+
+  .brand-name {
+    color: var(--text-primary);
+    letter-spacing: 0.5px;
+  }
+
+  .navbar-brand:hover .brand-icon {
+    transform: rotate(15deg);
   }
 
   /* Notification Dropdown */
@@ -446,6 +538,8 @@ const navbarStyles = `
     overflow-y: auto;
     padding: 0;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
   }
 
   .notification-header {
@@ -453,6 +547,7 @@ const navbarStyles = `
     top: 0;
     background: var(--bg-card);
     z-index: 10;
+    border-bottom: 1px solid var(--border-color);
   }
 
   .notification-header .dropdown-header {
@@ -505,6 +600,7 @@ const navbarStyles = `
     justify-content: center;
     color: white;
     flex-shrink: 0;
+    border: 2px solid rgba(255, 255, 255, 0.3);
   }
 
   .notification-content {
@@ -581,10 +677,12 @@ const navbarStyles = `
     width: 280px;
     padding: 0;
     box-shadow: 0 10px 40px rgba(0, 0, 0, 0.15);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-lg);
   }
 
   .user-info-header {
-    background: linear-gradient(135deg, var(--primary-green), var(--secondary-green));
+    background: linear-gradient(135deg, var(--gradient-rainbow));
     color: white;
   }
 
@@ -595,6 +693,7 @@ const navbarStyles = `
   .user-avatar {
     transition: all 0.3s ease;
     border: 2px solid var(--primary-green);
+    box-shadow: 0 0 10px rgba(16, 185, 129, 0.3);
   }
 
   .user-avatar-large {
@@ -602,6 +701,7 @@ const navbarStyles = `
     height: 48px;
     border-radius: 50%;
     border: 2px solid white;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
   }
 
   .user-status-indicator {
@@ -657,6 +757,22 @@ const navbarStyles = `
 
   .user-menu-item.text-danger:hover i {
     color: #f44336;
+  }
+
+  /* Enhanced navbar animations */
+  .navbar {
+    animation: slideInDown 0.6s ease-out;
+  }
+
+  @keyframes slideInDown {
+    from {
+      opacity: 0;
+      transform: translateY(-100%);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
   }
 
   /* Scrollbar styling for dropdowns */

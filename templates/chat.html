@@ -3,1064 +3,248 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AgriGenius AI Assistant</title>
+    <title>AgriGenius - AI Assistant</title>
     <meta name="description" content="Get instant agricultural advice from our AI-powered assistant">
-
-    <!-- Stylesheets -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- External Stylesheets -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    
+    <!-- Main AgriGenius Styles -->
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
-
+    
+    <!-- Chat-specific CSS -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/chat.prod.css') }}?v=1.0.1">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/svg+xml" href="{{ url_for('static', filename='images/gemini-chatbot-logo.svg') }}">
+    
+    <!-- Preconnect for CDNs to speed up asset loading -->
+    <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+    
+    <!-- Content Security Policy (minimal, adjust server-side as needed) -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' https:; img-src 'self' data: https:; script-src 'self' 'unsafe-inline' 'unsafe-hashes' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com; style-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://fonts.googleapis.com; font-src https://cdnjs.cloudflare.com https://fonts.gstatic.com data:;">
+    
+    <!-- Additional CSS for enhanced chat styling -->
     <style>
-        /* ChatGPT-like Interface Styles */
-        .chat-app {
-            display: flex;
-            height: calc(100vh - 160px); /* Account for navbar and footer */
-            background: var(--bg-primary);
-            overflow: hidden;
-            margin-top: 80px; /* Space for fixed navbar */
+        /* General Body and Theme */
+        body {
+            font-family: 'Roboto', sans-serif;
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        /* Sidebar Styles */
+        .dark-theme {
+            background-color: #121212;
+            color: #e0e0e0;
+        }
+
+        .dark-theme .chat-sidebar,
+        .dark-theme .chat-container,
+        .dark-theme .offcanvas-body {
+            background-color: #1e1e1e;
+            border-color: #333 !important;
+        }
+
+        .dark-theme .form-control,
+        .dark-theme .btn-outline-secondary {
+            background-color: #2a2a2a;
+            color: #e0e0e0;
+            border-color: #444;
+        }
+
+        .dark-theme .btn-close {
+            filter: invert(1);
+        }
+
+        /* Layout */
+        main.container-fluid {
+            height: calc(100vh - 56px); /* Adjust 56px based on header height */
+        }
+
+        /* Sidebar */
         .chat-sidebar {
-            width: 280px;
-            background: var(--bg-secondary);
-            border-right: 1px solid var(--border-color);
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
             display: flex;
             flex-direction: column;
-            transition: transform 0.3s ease;
         }
 
-        .sidebar-header {
-            padding: var(--spacing-lg);
-            border-bottom: 1px solid var(--border-color);
-        }
-
-        .new-chat-btn {
-            width: 100%;
-            background: var(--gradient-primary);
-            color: white;
-            border: none;
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-md);
-            font-weight: 500;
-            transition: all 0.3s ease;
-        }
-
-        .new-chat-btn:hover {
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-md);
-        }
-
-        .conversations-list {
-            flex: 1;
-            overflow-y: auto;
-            padding: var(--spacing-md);
-        }
-
-        .conversation-item {
-            padding: var(--spacing-md);
-            border-radius: var(--radius-lg);
+        #conversation-list .list-group-item {
             cursor: pointer;
-            transition: all 0.3s ease;
-            margin-bottom: var(--spacing-sm);
-            position: relative;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
         }
 
-        .conversation-item:hover {
-            background: var(--bg-tertiary);
-        }
-
-        .conversation-item.active {
-            background: var(--primary-green);
+        #conversation-list .list-group-item.active {
+            background-color: #0d6efd;
             color: white;
         }
 
-        .conversation-title {
-            flex: 1;
-            font-size: var(--font-size-sm);
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            margin-right: var(--spacing-sm);
+        /* Chat Area */
+        .chat-container {
+            background-color: #ffffff;
+            border: 1px solid #dee2e6;
+            border-radius: 0.5rem;
         }
 
-        .conversation-actions {
-            display: flex;
-            gap: var(--spacing-xs);
-            opacity: 0;
-            transition: opacity 0.3s ease;
-        }
-
-        .conversation-item:hover .conversation-actions {
-            opacity: 1;
-        }
-
-        .action-btn-small {
-            width: 24px;
-            height: 24px;
-            border: none;
-            background: none;
-            color: var(--text-muted);
-            border-radius: var(--radius-sm);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .action-btn-small:hover {
-            background: var(--bg-card);
-            color: var(--text-primary);
-        }
-
-        /* Main Chat Area */
-        .chat-main {
-            flex: 1;
+        #chat-window {
             display: flex;
             flex-direction: column;
-            position: relative;
+            gap: 1rem;
         }
 
-        .chat-header {
-            padding: var(--spacing-lg);
-            border-bottom: 1px solid var(--border-color);
-            background: var(--bg-card);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-        }
-
-        .chat-title {
-            font-size: var(--font-size-lg);
-            font-weight: 600;
-            color: var(--text-primary);
-            margin: 0;
-        }
-
-        .chat-status {
-            display: flex;
-            align-items: center;
-            gap: var(--spacing-sm);
-            font-size: var(--font-size-sm);
-            color: var(--text-muted);
-        }
-
-        .status-dot {
-            width: 8px;
-            height: 8px;
-            background: #4ade80;
-            border-radius: 50%;
-            animation: pulse 2s infinite;
-        }
-
-        .chat-messages {
-            flex: 1;
-            overflow-y: auto;
-            padding: var(--spacing-lg);
-            background: var(--bg-primary);
-        }
-
-        .message-group {
-            margin-bottom: var(--spacing-xl);
-            max-width: 800px;
-            margin-left: auto;
-            margin-right: auto;
-        }
-
+        /* Chat Bubbles */
         .message {
             display: flex;
-            gap: var(--spacing-md);
-            margin-bottom: var(--spacing-lg);
+            align-items: flex-start;
+            max-width: 80%;
         }
 
         .message.user {
+            align-self: flex-end;
             flex-direction: row-reverse;
         }
 
-        .message-avatar {
-            width: 32px;
-            height: 32px;
+        .message .avatar {
+            width: 40px;
+            height: 40px;
             border-radius: 50%;
+            background-color: #0d6efd;
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 600;
-            font-size: var(--font-size-sm);
-            flex-shrink: 0;
+            font-weight: bold;
+            margin: 0 10px;
         }
 
-        .message.user .message-avatar {
-            background: var(--primary-green);
+        .message.assistant .avatar {
+            background-color: #6c757d;
+        }
+
+        .message .text-bubble {
+            padding: 10px 15px;
+            border-radius: 15px;
+            background-color: #f1f1f1;
+        }
+
+        .message.user .text-bubble {
+            background-color: #0d6efd;
             color: white;
         }
 
-        .message.assistant .message-avatar {
-            background: var(--gradient-primary);
-            color: white;
-        }
-
-        .message-content {
-            flex: 1;
-            max-width: calc(100% - 48px);
-        }
-
-        .message.user .message-content {
-            text-align: right;
-        }
-
-        .message-bubble {
-            display: inline-block;
-            padding: var(--spacing-md) var(--spacing-lg);
-            border-radius: var(--radius-lg);
-            max-width: 100%;
-            word-wrap: break-word;
-            line-height: 1.5;
-            white-space: pre-wrap;
-            word-break: break-word;
-        }
-
-        .message.user .message-bubble {
-            background: var(--primary-green);
-            color: white;
-            border-bottom-right-radius: var(--radius-sm);
-        }
-
-        .message.assistant .message-bubble {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            color: var(--text-primary);
-            border-bottom-left-radius: var(--radius-sm);
-        }
-
-        .message-time {
-            font-size: var(--font-size-xs);
-            color: var(--text-muted);
-            margin-top: var(--spacing-xs);
-        }
-
-        .message.user .message-time {
-            text-align: right;
-        }
-
-        /* Typing Indicator */
-        .typing-indicator {
+        /* Suggestions Bar */
+        #suggestions-bar {
             display: flex;
-            align-items: center;
-            gap: var(--spacing-sm);
-            padding: var(--spacing-md) var(--spacing-lg);
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            border-bottom-left-radius: var(--radius-sm);
-            margin-bottom: var(--spacing-lg);
-        }
-
-        .typing-dots {
-            display: flex;
-            gap: 4px;
-        }
-
-        .typing-dot {
-            width: 6px;
-            height: 6px;
-            background: var(--text-muted);
-            border-radius: 50%;
-            animation: typing 1.4s infinite;
-        }
-
-        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
-        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
-
-        @keyframes typing {
-            0%, 60%, 100% { transform: translateY(0); opacity: 0.4; }
-            30% { transform: translateY(-8px); opacity: 1; }
-        }
-
-        /* Chat Input */
-        .chat-input-container {
-            padding: var(--spacing-lg);
-            background: var(--bg-card);
-            border-top: 1px solid var(--border-color);
-        }
-
-        .chat-input-wrapper {
-            max-width: 800px;
-            margin: 0 auto;
-            position: relative;
-        }
-
-        .chat-input {
-            width: 100%;
-            min-height: 44px;
-            max-height: 120px;
-            padding: var(--spacing-md) 60px var(--spacing-md) var(--spacing-lg);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            background: var(--bg-primary);
-            color: var(--text-primary);
-            font-family: var(--font-primary);
-            font-size: var(--font-size-base);
-            resize: none;
-            outline: none;
-            transition: all 0.3s ease;
-        }
-
-        .chat-input:focus {
-            border-color: var(--primary-green);
-            box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.1);
-        }
-
-        .input-actions {
-            position: absolute;
-            right: 8px;
-            top: 50%;
-            transform: translateY(-50%);
-            display: flex;
-            gap: var(--spacing-xs);
-        }
-
-        .input-action-btn {
-            width: 32px;
-            height: 32px;
-            border: none;
-            border-radius: 50%;
-            background: none;
-            color: var(--text-muted);
-            cursor: pointer;
-            transition: all 0.3s ease;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .input-action-btn:hover {
-            background: var(--bg-tertiary);
-            color: var(--text-primary);
-        }
-
-        .send-btn {
-            background: var(--gradient-primary);
-            color: white;
-        }
-
-        .send-btn:hover {
-            transform: scale(1.05);
-        }
-
-        .send-btn:disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            transform: none;
-        }
-
-        /* Welcome Screen */
-        .welcome-screen {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            height: 100%;
-            text-align: center;
-            padding: var(--spacing-2xl);
-        }
-
-        .welcome-icon {
-            font-size: 4rem;
-            color: var(--primary-green);
-            margin-bottom: var(--spacing-lg);
-        }
-
-        .welcome-title {
-            font-size: var(--font-size-3xl);
-            font-weight: 600;
-            color: var(--text-primary);
-            margin-bottom: var(--spacing-md);
-        }
-
-        .welcome-subtitle {
-            font-size: var(--font-size-lg);
-            color: var(--text-muted);
-            margin-bottom: var(--spacing-2xl);
-        }
-
-        .suggestions-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: var(--spacing-md);
-            max-width: 600px;
-            width: 100%;
+            gap: 10px;
+            overflow-x: auto;
         }
 
         .suggestion-card {
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            padding: var(--spacing-lg);
+            flex: 0 0 auto;
             cursor: pointer;
-            transition: all 0.3s ease;
-            text-align: left;
         }
 
-        .suggestion-card:hover {
-            background: var(--primary-green);
+        /* Input Form */
+        .chat-input {
+            resize: none;
+        }
+
+        .send-btn {
+            background-color: #0d6efd;
             color: white;
-            transform: translateY(-2px);
-            box-shadow: var(--shadow-lg);
         }
-
-        .suggestion-icon {
-            font-size: var(--font-size-xl);
-            margin-bottom: var(--spacing-sm);
-            display: block;
-        }
-
-        .suggestion-title {
-            font-weight: 600;
-            margin-bottom: var(--spacing-xs);
-        }
-
-        .suggestion-desc {
-            font-size: var(--font-size-sm);
-            opacity: 0.8;
-        }
-
-        /* Mobile Responsive */
-        @media (max-width: 768px) {
-            .chat-app {
-                height: calc(100vh - 140px); /* Account for mobile navbar and footer */
-                margin-top: 70px;
-            }
-            
-            .chat-sidebar {
-                position: fixed;
-                left: 0;
-                top: 70px; /* Start below navbar */
-                height: calc(100vh - 70px);
-                z-index: 1000;
-                transform: translateX(-100%);
-            }
-
-            .chat-sidebar.open {
-                transform: translateX(0);
-            }
-
-            .chat-main {
-                width: 100%;
-            }
-
-            .suggestions-grid {
-                grid-template-columns: 1fr;
-            }
-
-            .message-group {
-                padding: 0 var(--spacing-sm);
-            }
-        }
-
-        /* Sidebar Toggle */
-        .sidebar-toggle {
-            display: none;
-            position: fixed;
-            top: calc(80px + var(--spacing-lg)); /* Below navbar */
-            left: var(--spacing-lg);
-            z-index: 1001;
-            background: var(--bg-card);
-            border: 1px solid var(--border-color);
-            border-radius: var(--radius-lg);
-            width: 40px;
-            height: 40px;
-            cursor: pointer;
-            align-items: center;
-            justify-content: center;
-            box-shadow: var(--shadow-md);
-        }
-
-        @media (max-width: 768px) {
-            .sidebar-toggle {
-                display: flex;
-                top: calc(70px + var(--spacing-lg)); /* Below mobile navbar */
-            }
-        }
-
-        /* Removed duplicate styles - using main chat styles above */
-
-        /* Removed duplicate suggestion styles - using main styles above */
-
-        /* Removed duplicate message styles - using main styles above */
-
-        /* Removed duplicate typing styles - using main styles above */
-
-        /* Removed duplicate input styles - using main styles above */
-
-        /* Removed duplicate sensor and responsive styles - using main styles above */
     </style>
 </head>
 <body>
+    <!-- Main Application Header -->
     {% include 'navbar.html' %}
-    
-    <!-- Sidebar Toggle for Mobile -->
-    <button class="sidebar-toggle" id="sidebarToggle">
-        <i class="fas fa-bars"></i>
-    </button>
 
-    <div class="chat-app">
-        <!-- Sidebar -->
-        <div class="chat-sidebar" id="chatSidebar">
-            <div class="sidebar-header">
-                <button class="new-chat-btn" id="newChatBtn">
-                    <i class="fas fa-plus"></i> New Chat
-                </button>
-                
-                <!-- Quick Navigation -->
-                <div class="mt-3">
-                    <div class="d-grid gap-2">
-                        <a href="/articles" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-newspaper me-2"></i>
-                            Articles
-                        </a>
-                        <a href="/documentation" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-book me-2"></i>
-                            Documentation
-                        </a>
-                        <a href="/marketplace" class="btn btn-outline-primary btn-sm">
-                            <i class="fas fa-store me-2"></i>
-                            Marketplace
-                        </a>
+    <main class="container-fluid mt-4">
+        <div class="row g-0 vh-100">
+            <!-- Left Sidebar for Conversations and AI Modes -->
+            <aside class="col-lg-2 d-none d-lg-flex flex-column p-3">
+                <div class="chat-sidebar h-100">
+                    <div class="ai-modes-section">
+                        <div class="ai-modes-header">
+                            <h5 class="ai-modes-title">
+                                <i class="fas fa-robot"></i>
+                                AI Modes
+                            </h5>
+                            <div class="current-mode-indicator" id="current-mode-indicator" style="display: none;">
+                                <i class="fas fa-circle"></i>
+                                <span id="current-mode-name">Assist</span>
+                            </div>
+                        </div>
+                        <div id="ai-modes-list" class="ai-modes-list">
+                            <!-- AI modes will be loaded here dynamically -->
+                        </div>
+                    </div>
+                    <div class="p-3 border-bottom">
+                        <h5 class="mb-0">Conversations</h5>
+                        <button id="new-chat-btn" class="btn btn-primary w-100 mt-2">New Chat</button>
+                    </div>
+                    <div id="conversation-list" class="flex-grow-1 overflow-auto p-3"></div>
+                    <div class="p-3 border-top">
+                        <div class="d-flex align-items-center">
+                            <i class="fas fa-user-circle fs-3 me-2"></i>
+                            <span class="fw-bold">{{ current_user.username if current_user.is_authenticated else 'Guest' }}</span>
+                        </div>
+                        <button id="theme-toggle" class="btn btn-outline-secondary w-100 mt-2">Toggle Theme</button>
+                        {% if current_user.is_authenticated %}
+                            <a href="{{ url_for('logout') }}" class="btn btn-danger w-100 mt-2">Logout</a>
+                        {% endif %}
                     </div>
                 </div>
-            </div>
+            </aside>
 
-            <div class="conversations-list" id="conversationsList">
-                <!-- Conversations will be loaded here -->
+            <!-- Main Chat Area -->
+            <div class="col-lg-10 col-12 d-flex flex-column p-3">
+                <div class="chat-container d-flex flex-column flex-grow-1">
+                    <div id="chat-header" class="p-3 border-bottom d-flex justify-content-between align-items-center">
+                        <h5 id="chat-title" class="mb-0">New Chat</h5>
+                        <div class="d-lg-none">
+                            <button class="btn btn-outline-secondary" type="button" data-bs-toggle="offcanvas" data-bs-target="#offcanvasSidebar" aria-controls="offcanvasSidebar">
+                                <i class="fas fa-bars"></i>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="chat-window" class="flex-grow-1 p-4 overflow-auto"></div>
+
+                    <div id="suggestions-bar" class="p-3 border-top"></div>
+
+                    <div class="p-3 border-top">
+                        <div id="chat-form" class="d-flex align-items-center">
+                            <button id="upload-btn" class="btn btn-outline-secondary me-2" aria-label="Upload File" type="button">
+                                <i class="fas fa-paperclip"></i>
+                            </button>
+                            <textarea id="chat-input" class="form-control chat-input flex-grow-1" placeholder="Ask me anything about agriculture..." rows="1"></textarea>
+                            <button id="send-btn" class="btn send-btn ms-2" aria-label="Send Message" type="button">
+                                <i class="fas fa-paper-plane"></i>
+                            </button>
+                        </div>
+                        <div id="upload-preview" class="mt-2"></div>
+                    </div>
+                </div>
             </div>
         </div>
+    </main>
 
-        <!-- Main Chat Area -->
-        <div class="chat-main">
-            <!-- Chat Header -->
-            <div class="chat-header">
-                <div>
-                    <h1 class="chat-title mb-0">
-                        <i class="fas fa-robot me-2 chatbot-logo"></i> <span class="ai-assistant-logo">AgriGenius AI Assistant</span>
-                    </h1>
-                </div>
-                <div class="chat-status">
-                    <div class="status-dot"></div>
-                    <span>Online</span>
-                </div>
-            </div>
-
-            <!-- Chat Messages -->
-            <div class="chat-messages" id="chatMessages">
-                <!-- Welcome screen will be shown initially -->
-                <div class="welcome-screen" id="welcomeScreen">
-                    <i class="welcome-icon fas fa-robot"></i>
-                    <h2 class="welcome-title">Welcome to AgriGenius AI</h2>
-                    <p class="welcome-subtitle">Your intelligent farming companion powered by advanced AI</p>
-
-                    <div class="suggestions-grid">
-                        <div class="suggestion-card" data-suggestion="What are the current sensor readings?">
-                            <i class="suggestion-icon fas fa-chart-line"></i>
-                            <div class="suggestion-title">Sensor Data</div>
-                            <div class="suggestion-desc">Check current farm conditions</div>
-                        </div>
-
-                        <div class="suggestion-card" data-suggestion="How can I improve my crop yield?">
-                            <i class="suggestion-icon fas fa-seedling"></i>
-                            <div class="suggestion-title">Crop Optimization</div>
-                            <div class="suggestion-desc">Get yield improvement tips</div>
-                        </div>
-
-                        <div class="suggestion-card" data-suggestion="What fertilizer should I use?">
-                            <i class="suggestion-icon fas fa-flask"></i>
-                            <div class="suggestion-title">Fertilizer Advice</div>
-                            <div class="suggestion-desc">Nutrient recommendations</div>
-                        </div>
-
-                        <div class="suggestion-card" data-suggestion="When should I water my plants?">
-                            <i class="suggestion-icon fas fa-tint"></i>
-                            <div class="suggestion-title">Watering Schedule</div>
-                            <div class="suggestion-desc">Optimize irrigation timing</div>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Messages will be added here dynamically -->
-            </div>
-
-            <!-- Chat Input -->
-            <div class="chat-input-container">
-                <div class="chat-input-wrapper">
-                    <textarea
-                        id="chatInput"
-                        class="chat-input"
-                        placeholder="Message AgriGenius AI..."
-                        rows="1"></textarea>
-
-                    <div class="input-actions">
-                        <button type="button" class="input-action-btn" id="attachBtn" title="Attach file">
-                            <i class="fas fa-paperclip"></i>
-                        </button>
-                        <button type="button" class="input-action-btn send-btn" id="sendBtn" title="Send message" disabled>
-                            <i class="fas fa-paper-plane"></i>
-                        </button>
-                    </div>
-                </div>
-            </div>
+    <!-- Offcanvas Sidebar for Mobile -->
+    <div class="offcanvas offcanvas-start" tabindex="-1" id="offcanvasSidebar" aria-labelledby="offcanvasSidebarLabel">
+        <div class="offcanvas-header">
+            <h5 class="offcanvas-title" id="offcanvasSidebarLabel">Conversations</h5>
+            <button type="button" class="btn-close" data-bs-dismiss="offcanvas" aria-label="Close"></button>
+        </div>
+        <div class="offcanvas-body">
+            <div id="mobile-conversation-list"></div>
         </div>
     </div>
 
-    <!-- Footer -->
-    <footer class="bg-dark text-light py-4 mt-auto">
-        <div class="container">
-            <div class="row">
-                <div class="col-md-6">
-                    <h5>AgriGenius AI Assistant</h5>
-                    <p class="text-muted">Your intelligent farming companion powered by advanced AI technology.</p>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <div class="d-flex justify-content-md-end gap-3">
-                        <a href="/articles" class="text-light text-decoration-none">
-                            <i class="fas fa-newspaper me-1"></i> Articles
-                        </a>
-                        <a href="/documentation" class="text-light text-decoration-none">
-                            <i class="fas fa-book me-1"></i> Documentation
-                        </a>
-                        <a href="/marketplace" class="text-light text-decoration-none">
-                            <i class="fas fa-store me-1"></i> Marketplace
-                        </a>
-                    </div>
-                </div>
-            </div>
-            <hr class="my-3">
-            <div class="row align-items-center">
-                <div class="col-md-6">
-                    <small class="text-muted">&copy; 2024 AgriGenius. All rights reserved.</small>
-                </div>
-                <div class="col-md-6 text-md-end">
-                    <small class="text-muted">Powered by Advanced AI Technology</small>
-                </div>
-            </div>
-        </div>
-    </footer>
-
-    <!-- Hidden file input -->
-    <input type="file" id="fileInput" accept="image/*,.pdf,.doc,.docx,.txt" style="display: none;">
-
-    <!-- Scripts -->
+    <!-- External Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-    <script>
-        class AgriChatGPT {
-            constructor() {
-                this.chatMessages = document.getElementById('chatMessages');
-                this.chatInput = document.getElementById('chatInput');
-                this.sendBtn = document.getElementById('sendBtn');
-                this.welcomeScreen = document.getElementById('welcomeScreen');
-                this.conversationsList = document.getElementById('conversationsList');
-                this.newChatBtn = document.getElementById('newChatBtn');
-                this.sidebarToggle = document.getElementById('sidebarToggle');
-                this.chatSidebar = document.getElementById('chatSidebar');
-
-                this.currentConversationId = null;
-                this.conversations = [];
-                this.isTyping = false;
-
-                this.initializeEventListeners();
-                this.loadConversations();
-                this.checkForExistingConversation();
-            }
-
-            initializeEventListeners() {
-                // Send button click
-                this.sendBtn.addEventListener('click', () => this.sendMessage());
-
-                // Enter key to send (Shift+Enter for new line)
-                this.chatInput.addEventListener('keydown', (e) => {
-                    if (e.key === 'Enter' && !e.shiftKey) {
-                        e.preventDefault();
-                        this.sendMessage();
-                    }
-                });
-
-                // Auto-resize textarea and enable/disable send button
-                this.chatInput.addEventListener('input', () => {
-                    this.chatInput.style.height = 'auto';
-                    this.chatInput.style.height = Math.min(this.chatInput.scrollHeight, 120) + 'px';
-
-                    // Enable/disable send button based on input
-                    const hasText = this.chatInput.value.trim().length > 0;
-                    this.sendBtn.disabled = !hasText || this.isTyping;
-                });
-
-                // Suggestion cards
-                document.querySelectorAll('.suggestion-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        const suggestion = card.dataset.suggestion;
-                        this.chatInput.value = suggestion;
-                        this.sendMessage();
-                    });
-                });
-
-                // New chat button
-                this.newChatBtn.addEventListener('click', () => this.startNewChat());
-
-                // Sidebar toggle for mobile
-                this.sidebarToggle.addEventListener('click', () => {
-                    this.chatSidebar.classList.toggle('open');
-                });
-
-                // File attachment
-                document.getElementById('attachBtn').addEventListener('click', () => {
-                    document.getElementById('fileInput').click();
-                });
-
-                // Close sidebar when clicking outside on mobile
-                document.addEventListener('click', (e) => {
-                    if (window.innerWidth <= 768 &&
-                        !this.chatSidebar.contains(e.target) &&
-                        !this.sidebarToggle.contains(e.target)) {
-                        this.chatSidebar.classList.remove('open');
-                    }
-                });
-            }
-
-            checkForExistingConversation() {
-                // Check if we're loading a specific conversation from URL
-                const pathParts = window.location.pathname.split('/');
-                if (pathParts[1] === 'chat' && pathParts[2]) {
-                    this.currentConversationId = parseInt(pathParts[2]);
-                    this.loadConversation(this.currentConversationId);
-                }
-            }
-
-            async loadConversations() {
-                try {
-                    const response = await fetch('/api/conversations');
-                    const data = await response.json();
-
-                    if (data.conversations) {
-                        this.conversations = data.conversations;
-                        this.renderConversations();
-                    }
-                } catch (error) {
-                    console.error('Error loading conversations:', error);
-                }
-            }
-
-            renderConversations() {
-                this.conversationsList.innerHTML = '';
-
-                this.conversations.forEach(conv => {
-                    const convElement = document.createElement('div');
-                    convElement.className = `conversation-item ${conv.id === this.currentConversationId ? 'active' : ''}`;
-                    convElement.innerHTML = `
-                        <div class="conversation-title">${conv.title}</div>
-                        <div class="conversation-actions">
-                            <button class="action-btn-small" onclick="agriChat.deleteConversation(${conv.id})" title="Delete">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-
-                    convElement.addEventListener('click', (e) => {
-                        if (!e.target.closest('.conversation-actions')) {
-                            this.loadConversation(conv.id);
-                        }
-                    });
-
-                    this.conversationsList.appendChild(convElement);
-                });
-            }
-
-            async loadConversation(conversationId) {
-                try {
-                    const response = await fetch(`/api/conversations/${conversationId}/messages`);
-                    const data = await response.json();
-
-                    if (data.conversation) {
-                        this.currentConversationId = conversationId;
-                        this.clearMessages();
-
-                        // Update URL without page reload
-                        window.history.pushState({}, '', `/chat/${conversationId}`);
-
-                        // Render messages
-                        data.conversation.messages.forEach(msg => {
-                            this.addMessage(msg.content, msg.role, new Date(msg.timestamp));
-                        });
-
-                        // Update active conversation in sidebar
-                        this.renderConversations();
-                    }
-                } catch (error) {
-                    console.error('Error loading conversation:', error);
-                }
-            }
-
-            startNewChat() {
-                this.currentConversationId = null;
-                this.clearMessages();
-                this.showWelcomeScreen();
-
-                // Update URL
-                window.history.pushState({}, '', '/chat');
-
-                // Update sidebar
-                this.renderConversations();
-
-                // Focus input
-                this.chatInput.focus();
-            }
-
-            clearMessages() {
-                this.chatMessages.innerHTML = '';
-            }
-
-            showWelcomeScreen() {
-                this.chatMessages.innerHTML = `
-                    <div class="welcome-screen">
-                        <i class="welcome-icon fas fa-robot"></i>
-                        <h2 class="welcome-title">Welcome to AgriGenius AI</h2>
-                        <p class="welcome-subtitle">Your intelligent farming companion powered by advanced AI</p>
-
-                        <div class="suggestions-grid">
-                            <div class="suggestion-card" data-suggestion="What are the current sensor readings?">
-                                <i class="suggestion-icon fas fa-chart-line"></i>
-                                <div class="suggestion-title">Sensor Data</div>
-                                <div class="suggestion-desc">Check current farm conditions</div>
-                            </div>
-
-                            <div class="suggestion-card" data-suggestion="How can I improve my crop yield?">
-                                <i class="suggestion-icon fas fa-seedling"></i>
-                                <div class="suggestion-title">Crop Optimization</div>
-                                <div class="suggestion-desc">Get yield improvement tips</div>
-                            </div>
-
-                            <div class="suggestion-card" data-suggestion="What fertilizer should I use?">
-                                <i class="suggestion-icon fas fa-flask"></i>
-                                <div class="suggestion-title">Fertilizer Advice</div>
-                                <div class="suggestion-desc">Nutrient recommendations</div>
-                            </div>
-
-                            <div class="suggestion-card" data-suggestion="When should I water my plants?">
-                                <i class="suggestion-icon fas fa-tint"></i>
-                                <div class="suggestion-title">Watering Schedule</div>
-                                <div class="suggestion-desc">Optimize irrigation timing</div>
-                            </div>
-                        </div>
-                    </div>
-                `;
-
-                // Re-attach suggestion card listeners
-                document.querySelectorAll('.suggestion-card').forEach(card => {
-                    card.addEventListener('click', () => {
-                        const suggestion = card.dataset.suggestion;
-                        this.chatInput.value = suggestion;
-                        this.sendMessage();
-                    });
-                });
-            }
-
-            async sendMessage() {
-                const message = this.chatInput.value.trim();
-                if (!message || this.isTyping) return;
-
-                // Hide welcome screen if visible
-                const welcomeScreen = document.querySelector('.welcome-screen');
-                if (welcomeScreen) {
-                    welcomeScreen.remove();
-                }
-
-                // Add user message
-                this.addMessage(message, 'user');
-                this.chatInput.value = '';
-                this.chatInput.style.height = 'auto';
-                this.sendBtn.disabled = true;
-
-                // Show typing indicator
-                this.showTypingIndicator();
-
-                try {
-                    // Send to backend
-                    const response = await fetch('/api/chat', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                        },
-                        body: JSON.stringify({
-                            message: message,
-                            conversation_id: this.currentConversationId
-                        })
-                    });
-
-                    const data = await response.json();
-
-                    // Remove typing indicator
-                    this.hideTypingIndicator();
-
-                    if (data.error) {
-                        this.addMessage('Sorry, I encountered an error. Please try again.', 'assistant');
-                    } else {
-                        this.addMessage(data.response, 'assistant');
-
-                        // Update conversation ID if this was a new chat
-                        if (!this.currentConversationId && data.conversation_id) {
-                            this.currentConversationId = data.conversation_id;
-                            window.history.pushState({}, '', `/chat/${data.conversation_id}`);
-                            this.loadConversations(); // Refresh sidebar
-                        }
-                    }
-                } catch (error) {
-                    this.hideTypingIndicator();
-                    this.addMessage('Sorry, I\'m having trouble connecting. Please check your internet connection and try again.', 'assistant');
-                }
-            }
-
-            addMessage(content, sender, timestamp = null) {
-                const messageGroup = document.createElement('div');
-                messageGroup.className = 'message-group';
-
-                const message = document.createElement('div');
-                message.className = `message ${sender}`;
-
-                const avatar = document.createElement('div');
-                avatar.className = 'message-avatar';
-
-                if (sender === 'user') {
-                    avatar.textContent = window.currentUser ? window.currentUser.charAt(0).toUpperCase() : 'U';
-                } else {
-                    avatar.innerHTML = '<i class="fas fa-robot"></i>';
-                }
-
-                const messageContent = document.createElement('div');
-                messageContent.className = 'message-content';
-
-                const messageBubble = document.createElement('div');
-                messageBubble.className = 'message-bubble';
-                messageBubble.innerHTML = this.formatMessage(content);
-
-                const messageTime = document.createElement('div');
-                messageTime.className = 'message-time';
-                const time = timestamp ? new Date(timestamp) : new Date();
-                messageTime.textContent = time.toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
-
-                messageContent.appendChild(messageBubble);
-                messageContent.appendChild(messageTime);
-
-                message.appendChild(avatar);
-                message.appendChild(messageContent);
-                messageGroup.appendChild(message);
-
-                this.chatMessages.appendChild(messageGroup);
-                this.scrollToBottom();
-            }
-
-            formatMessage(content) {
-                // Convert markdown-like formatting to HTML
-                return content
-                    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-                    .replace(/\*(.*?)\*/g, '<em>$1</em>')
-                    .replace(/\n/g, '<br>')
-                    .replace(/• /g, '<br>• ');
-            }
-
-            showTypingIndicator() {
-                this.isTyping = true;
-                this.sendBtn.disabled = true;
-
-                const typingGroup = document.createElement('div');
-                typingGroup.className = 'message-group typing-group';
-
-                const typingMessage = document.createElement('div');
-                typingMessage.className = 'message assistant';
-
-                const avatar = document.createElement('div');
-                avatar.className = 'message-avatar';
-                avatar.innerHTML = '<i class="fas fa-robot"></i>';
-
-                const typingContent = document.createElement('div');
-                typingContent.className = 'message-content';
-
-                const typingIndicator = document.createElement('div');
-                typingIndicator.className = 'typing-indicator';
-                typingIndicator.innerHTML = `
-                    <span>AgriGenius is thinking</span>
-                    <div class="typing-dots">
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                        <div class="typing-dot"></div>
-                    </div>
-                `;
-
-                typingContent.appendChild(typingIndicator);
-                typingMessage.appendChild(avatar);
-                typingMessage.appendChild(typingContent);
-                typingGroup.appendChild(typingMessage);
-
-                this.chatMessages.appendChild(typingGroup);
-                this.scrollToBottom();
-            }
-
-            hideTypingIndicator() {
-                this.isTyping = false;
-                const typingGroup = this.chatMessages.querySelector('.typing-group');
-                if (typingGroup) {
-                    typingGroup.remove();
-                }
-
-                // Re-enable send button if there's text
-                const hasText = this.chatInput.value.trim().length > 0;
-                this.sendBtn.disabled = !hasText;
-            }
-
-            scrollToBottom() {
-                this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
-            }
-
-            async deleteConversation(conversationId) {
-                if (!confirm('Are you sure you want to delete this conversation?')) {
-                    return;
-                }
-
-                try {
-                    const response = await fetch(`/api/conversations/${conversationId}`, {
-                        method: 'DELETE'
-                    });
-
-                    if (response.ok) {
-                        // If we're currently viewing this conversation, start a new chat
-                        if (this.currentConversationId === conversationId) {
-                            this.startNewChat();
-                        }
-
-                        // Reload conversations list
-                        this.loadConversations();
-                    }
-                } catch (error) {
-                    console.error('Error deleting conversation:', error);
-                    alert('Failed to delete conversation. Please try again.');
-                }
-            }
-
-        }
-
-        // Initialize chat when page loads
-        document.addEventListener('DOMContentLoaded', () => {
-            window.agriChat = new AgriChatGPT();
-
-            // Set current user for avatar
-            {% if current_user.is_authenticated %}
-            window.currentUser = '{{ current_user.username }}';
-            {% else %}
-            window.currentUser = null;
-            {% endif %}
-        });
-    </script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/js/all.min.js"></script>
+    
+    <!-- Main Chat Logic -->
+    <script src="{{ url_for('static', filename='js/chat.js') }}?v=1.0.1"></script>
 </body>
 </html>

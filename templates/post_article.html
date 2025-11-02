@@ -334,6 +334,30 @@
         const loadingOverlay = document.getElementById('loadingOverlay');
         
         postForm.addEventListener('submit', function(e) {
+            e.preventDefault(); // Prevent default form submission
+            
+            // Basic validation
+            const title = document.getElementById('title').value.trim();
+            const content = document.getElementById('content').value.trim();
+            
+            if (!title) {
+                alert('Please enter a title for your article.');
+                document.getElementById('title').focus();
+                return;
+            }
+            
+            if (!content) {
+                alert('Please enter content for your article.');
+                document.getElementById('content').focus();
+                return;
+            }
+            
+            if (content.length < 10) {
+                alert('Article content must be at least 10 characters long.');
+                document.getElementById('content').focus();
+                return;
+            }
+            
             const submitBtn = this.querySelector('button[type="submit"]');
             const originalText = submitBtn.innerHTML;
             
@@ -342,12 +366,8 @@
             submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin me-2"></i>Publishing...';
             submitBtn.disabled = true;
             
-            // Re-enable after 5 seconds (in case of error)
-            setTimeout(() => {
-                loadingOverlay.classList.remove('show');
-                submitBtn.innerHTML = originalText;
-                submitBtn.disabled = false;
-            }, 5000);
+            // Submit the form
+            this.submit();
         });
         
         // Auto-save draft (optional feature)

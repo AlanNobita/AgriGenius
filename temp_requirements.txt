@@ -1,0 +1,14 @@
+# Core dependencies for RAG system
+numpy
+scikit-learn
+sentence-transformers
+PyPDF2
+requests
+python-dotenv
+Flask-Cors
+
+# Optional dependencies for better performance
+torch
+transformers
+sentencepiece
+accelerate

@@ -1,0 +1,23 @@
+[
+  {
+    "id": "doc1",
+    "text": "Agriculture is the practice of cultivating plants and livestock. Modern agriculture includes sustainable practices to ensure food security for growing populations.",
+    "meta": {
+      "source": "test_agriculture.txt"
+    }
+  },
+  {
+    "id": "doc2",
+    "text": "Crop rotation is a farming practice where different types of crops are grown in the same area in sequential seasons. This helps improve soil fertility and reduce pest buildup.",
+    "meta": {
+      "source": "test_crop_rotation.txt"
+    }
+  },
+  {
+    "id": "doc3",
+    "text": "Organic farming avoids the use of synthetic pesticides and fertilizers. It relies on natural processes to maintain soil health and crop productivity.",
+    "meta": {
+      "source": "test_organic_farming.txt"
+    }
+  }
+]

@@ -8,46 +8,59 @@ import logging
 import requests
 import json
 from datetime import datetime, timezone
-from dotenv import load_dotenv
 from sensors.sensors import get_sensor_data
 from flask_login import LoginManager, UserMixin, login_user, login_required, logout_user, current_user
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 import uuid
 
-# Load environment variables from .env file
-load_dotenv()
+from config import Config
+from flask_bcrypt import Bcrypt
+
+from flask_compress import Compress
+import sys
+import os as _os
 
 # Initialize Flask app
+from flask_cors import CORS
+
 app = Flask(__name__)
-app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'dev-key-change-in-production')
-app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///farmgenius.db')
-app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+CORS(app)
+app.config.from_object(Config)
+Compress(app)
 
 # OpenRouter API Configuration
-OPENROUTER_API_KEY = os.getenv('OPENROUTER_API_KEY', 'your-openrouter-api-key-here')
-# Force reload environment variables
-from dotenv import load_dotenv
-load_dotenv(override=True)
-OPENROUTER_MODEL = os.getenv('OPENROUTER_MODEL', 'meta-llama/llama-4-maverick:free')  # Default model
+OPENROUTER_MODEL = 'meta-llama/llama-4-maverick:free'  # Default model
 OPENROUTER_BASE_URL = "https://openrouter.ai/api/v1/chat/completions"
 
 # Initialize extensions
 db = SQLAlchemy(app)
 csrf = CSRFProtect(app)
+bcrypt = Bcrypt(app)
 login_manager = LoginManager(app)
+
+@app.after_request
+def add_header(response):
+    if 'Cache-Control' not in response.headers:
+        response.cache_control.max_age = 31536000
+    return response
 login_manager.login_view = 'login'
 login_manager.login_message = 'Please log in to access this page.'
 
+from logging.handlers import RotatingFileHandler
+
 # Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s %(levelname)s %(name)s %(message)s',
-    handlers=[
-        logging.FileHandler('flask.log'),
-        logging.StreamHandler()
-    ]
-)
+if not app.debug:
+    if not os.path.exists('logs'):
+        os.mkdir('logs')
+    file_handler = RotatingFileHandler('logs/agrigenius.log', maxBytes=1024000, backupCount=10)
+    file_handler.setFormatter(logging.Formatter(
+        '%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]'))
+    file_handler.setLevel(logging.INFO)
+    app.logger.addHandler(file_handler)
+
+    app.logger.setLevel(logging.INFO)
+    app.logger.info('AgriGenius startup')
 
 # File upload configuration
 UPLOAD_FOLDER = 'static/uploads'
@@ -174,6 +187,7 @@ class Conversation(db.Model):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     is_active = db.Column(db.Boolean, default=True)
     user = db.relationship('User', backref=db.backref('conversations', lazy=True))
+    ai_mode_id = db.Column(db.Integer, db.ForeignKey('ai_mode.id'), nullable=True)  # Reference to AI mode
 
 # Message model for individual chat messages
 class ChatMessage(db.Model):
@@ -197,6 +211,32 @@ class UserMemory(db.Model):
     updated_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc))
     user = db.relationship('User', backref=db.backref('memories', lazy=True))
 
+# AI Mode model for different AI interaction modes
+class AIMode(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(100), nullable=False, unique=True)  # 'learn', 'read', 'analyze', 'assist', 'creative'
+    display_name = db.Column(db.String(100), nullable=False)
+    description = db.Column(db.Text, nullable=False)
+    icon = db.Column(db.String(50), nullable=False)  # Font Awesome icon class
+    color = db.Column(db.String(20), nullable=False)  # CSS color class or hex
+    is_active = db.Column(db.Boolean, default=True)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    
+    # Relationships
+    conversations = db.relationship('Conversation', backref=db.backref('ai_mode', lazy=True))
+
+# User's current AI mode preference
+class UserAIModePreference(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=True)
+    session_id = db.Column(db.String(100), nullable=True)  # For anonymous users
+    mode_id = db.Column(db.Integer, db.ForeignKey('ai_mode.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    updated_at = db.Column(db.DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+    
+    user = db.relationship('User', backref=db.backref('ai_mode_preferences', lazy=True))
+    mode = db.relationship('AIMode', backref=db.backref('user_preferences', lazy=True))
+
 # Like model for articles and documentation
 class Like(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -207,6 +247,17 @@ class Like(db.Model):
     user = db.relationship('User', backref=db.backref('likes', lazy=True))
     article = db.relationship('Article', backref=db.backref('article_likes', lazy=True))
     doc = db.relationship('Documentation', backref=db.backref('doc_likes', lazy=True))
+
+
+# SavedArticle model for "Save for later" feature
+class SavedArticle(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('user.id'), nullable=False)
+    article_id = db.Column(db.Integer, db.ForeignKey('article.id'), nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+
+    user = db.relationship('User', backref=db.backref('saved_articles', lazy=True))
+    article = db.relationship('Article', backref=db.backref('saved_by', lazy=True))
 
 # Comment model for articles and documentation
 class Comment(db.Model):
@@ -348,6 +399,7 @@ def add_product():
 
 # Post a new article
 @app.route('/post_article', methods=['GET', 'POST'])
+@csrf.exempt
 def post_article():
     if request.method == 'POST':
         try:
@@ -406,7 +458,7 @@ def post_article():
                 title=title,
                 content=content,
                 author_id=author_id,
-                verified=False,
+                verified=True,
                 category=category,
                 tags=tags,
                 image_url=image_url,
@@ -416,7 +468,7 @@ def post_article():
             )
             db.session.add(new_article)
             db.session.commit()
-            flash('Article submitted for review!')
+            flash('Article published successfully!')
             username = current_user.username if current_user.is_authenticated else 'Anonymous'
             app.logger.info(f'User {username} submitted article: {title}')
             return redirect(url_for('articles'))
@@ -589,14 +641,15 @@ def login():
         try:
             username = request.form.get('username', '').strip()
             password = request.form.get('password', '')
+            remember = True if request.form.get('remember') else False
 
             if not username or not password:
                 flash('Please enter both username and password.')
                 return render_template('login.html')
 
             user = User.query.filter_by(username=username).first()
-            if user and check_password_hash(user.password, password):
-                login_user(user)
+            if user and bcrypt.check_password_hash(user.password, password):
+                login_user(user, remember=remember)
                 app.logger.info(f'User {username} logged in successfully')
 
                 # Redirect to next page if specified
@@ -644,7 +697,7 @@ def signup():
                 return render_template('signup.html')
 
             # Create new user
-            hashed_pw = generate_password_hash(password, method='pbkdf2:sha256')
+            hashed_pw = bcrypt.generate_password_hash(password).decode('utf-8')
             user = User(username=username, password=hashed_pw)
             db.session.add(user)
             db.session.commit()
@@ -676,6 +729,41 @@ def chat():
 @app.route('/chat/<conversation_id>')
 def chat_conversation(conversation_id):
     return render_template('chat.html', conversation_id=conversation_id)
+
+# Mount RAG API blueprint under /rag
+try:
+    _RAG_SRC = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'static', 'rag-chatbot', 'src')
+    if _RAG_SRC not in sys.path:
+        sys.path.append(_RAG_SRC)
+    from api.routes import api_bp as rag_api_bp  # type: ignore
+    # Exempt RAG API from CSRF because it is called via fetch/XHR
+    try:
+        csrf.exempt(rag_api_bp)
+    except Exception:
+        pass
+    app.register_blueprint(rag_api_bp, url_prefix='/rag')
+except Exception as e:
+    app.logger.error(f'Failed to mount RAG API blueprint: {e}')
+
+# Simple Documents manager page (upload & list PDFs)
+@app.route('/documents', methods=['GET'])
+def documents_manager():
+    try:
+        pdf_dir = _os.path.join(_os.path.dirname(_os.path.abspath(__file__)), 'static', 'rag-chatbot', 'data', 'pdfs')
+        _os.makedirs(pdf_dir, exist_ok=True)
+        pdfs = []
+        for name in sorted(_os.listdir(pdf_dir)):
+            if name.lower().endswith('.pdf'):
+                pdfs.append({
+                    'name': name,
+                    'path': f"/static/rag-chatbot/data/pdfs/{name}"
+                })
+    except Exception:
+        pdfs = []
+    return render_template('documents.html', pdfs=pdfs)
+
+
+
 
 # Get user's conversation history
 @app.route('/api/conversations', methods=['GET'])
@@ -797,8 +885,11 @@ def ai_chat():
         # Get user memory for context
         user_memory = get_user_memory(user_id, session_id)
 
+        # Get current AI mode
+        current_mode = get_current_ai_mode(user_id, session_id)
+
         # Generate AI response
-        ai_response = generate_ai_response(user_input, sensor_data, conversation, user_memory)
+        ai_response = generate_ai_response(user_input, sensor_data, conversation, user_memory, current_mode)
 
         # Save AI message
         ai_message = ChatMessage(
@@ -948,36 +1039,41 @@ def extract_and_save_user_info(user_input, user_id, session_id):
     except Exception as e:
         app.logger.error(f'Error extracting user info: {str(e)}')
 
-def generate_ai_response(user_input, sensor_data, conversation, user_memory):
-    """Generate AI response using OpenRouter API or fallback to local logic"""
+def generate_ai_response(user_input, sensor_data, conversation, user_memory, current_mode=None):
+    """Generate AI response using OpenRouter API or fallback to local logic with mode support"""
     try:
         # Debug logging
         app.logger.info(f'API Key present: {bool(OPENROUTER_API_KEY)}')
         app.logger.info(f'API Key value: {OPENROUTER_API_KEY[:20]}...' if OPENROUTER_API_KEY else 'None')
         app.logger.info(f'Model: {OPENROUTER_MODEL}')
+        app.logger.info(f'Current AI Mode: {current_mode.name if current_mode else "None"}')
 
         # Try OpenRouter API first
         if OPENROUTER_API_KEY and OPENROUTER_API_KEY != 'your-openrouter-api-key-here':
             app.logger.info('Attempting OpenRouter API call...')
-            return call_openrouter_api(user_input, sensor_data, conversation, user_memory)
+            return call_openrouter_api(user_input, sensor_data, conversation, user_memory, current_mode)
         else:
             app.logger.info('Using local response generation (no valid API key)')
-            # Fallback to enhanced local logic
-            return generate_local_response(user_input, sensor_data, user_memory)
+            # Fallback to enhanced local logic with mode support
+            return generate_local_response(user_input, sensor_data, user_memory, current_mode)
     except Exception as e:
         app.logger.error(f'Error generating AI response: {str(e)}')
-        return generate_local_response(user_input, sensor_data, user_memory)
+        return generate_local_response(user_input, sensor_data, user_memory, current_mode)
 
-def call_openrouter_api(user_input, sensor_data, conversation, user_memory):
-    """Call OpenRouter API for AI response"""
+def call_openrouter_api(user_input, sensor_data, conversation, user_memory, current_mode=None):
+    """Call OpenRouter API for AI response with RAG integration and mode support"""
     try:
         app.logger.info(f'Building API request for model: {OPENROUTER_MODEL}')
-
+        
+        # Get RAG results first
+        from rag_integration import generate_answer
+        rag_response, contexts = generate_answer(user_input)
+        
         # Build conversation history for context
         messages = [
             {
                 "role": "system",
-                "content": build_system_prompt(sensor_data, user_memory)
+                "content": build_system_prompt(sensor_data, user_memory, contexts, current_mode)
             }
         ]
 
@@ -1085,14 +1181,26 @@ def try_fallback_models(payload, headers):
     # If all fallback models fail, raise exception
     raise Exception("All models failed, including fallbacks")
 
-def build_system_prompt(sensor_data, user_memory):
-    """Build system prompt with context including documentation and articles"""
+def build_system_prompt(sensor_data, user_memory, contexts=None, current_mode=None):
+    """Build system prompt with context including documentation, articles, and AI mode"""
     prompt = """You are AgriGenius AI, an expert agricultural assistant. You help farmers optimize their operations with intelligent advice based on real-time data and agricultural best practices.
 
-IMPORTANT: When answering questions, if there is relevant information in the documentation or articles database, you MUST cite your sources by mentioning the article/documentation title and providing a reference like "[Source: Article Title]" or "[Ref: Documentation Title]".
+CURRENT AI MODE: {mode_name}
+MODE DESCRIPTION: {mode_description}
 
 CURRENT SENSOR DATA:
 """
+    
+    # Add mode-specific instructions
+    if current_mode:
+        mode_instructions = get_mode_instructions(current_mode.name)
+        prompt = prompt.format(
+            mode_name=current_mode.display_name,
+            mode_description=current_mode.description
+        )
+        prompt += f"\n\nMODE-SPECIFIC INSTRUCTIONS:\n{mode_instructions}\n\n"
+    else:
+        prompt += "\n\n"
 
     if sensor_data.get('status') != 'error':
         prompt += f"""
@@ -1131,7 +1239,7 @@ CURRENT SENSOR DATA:
         prompt += "\n\nWhen providing information that comes from these sources, ALWAYS cite them using the format: [Source: Title]\n"
     except Exception as e:
         app.logger.error(f'Error fetching knowledge base: {str(e)}')
-
+        
     # Add user memory context
     if user_memory:
         prompt += "\nUSER CONTEXT:\n"
@@ -1161,12 +1269,13 @@ Respond as a knowledgeable agricultural expert who cares about the farmer's succ
 
     return prompt
 
-def generate_local_response(user_input, sensor_data, user_memory):
-    """Enhanced local response generation with user memory and source citations"""
+def generate_local_response(user_input, sensor_data, user_memory, current_mode=None):
+    """Enhanced local response generation with user memory, source citations, and AI modes"""
     user_input_lower = user_input.lower()
 
     # Get user context
     user_crops = list(user_memory.get('crops', {}).keys()) if user_memory.get('crops') else []
+    user_location = user_memory.get('location', {}).get('region', '') if user_memory.get('location') else ''
 
     # Search for relevant articles and documentation
     relevant_sources = []
@@ -1192,7 +1301,9 @@ def generate_local_response(user_input, sensor_data, user_memory):
             relevant_sources.append(f"[Ref: {doc.title}]")
     except Exception as e:
         app.logger.error(f'Error searching sources: {str(e)}')
-    user_location = user_memory.get('location', {}).get('region', '') if user_memory.get('location') else ''
+
+    # Get mode-specific response style
+    mode_style = get_mode_instructions(current_mode.name) if current_mode else get_mode_instructions('assist')
 
     # Personalized greeting
     if any(word in user_input_lower for word in ['hello', 'hi', 'hey', 'greetings']):
@@ -1202,9 +1313,21 @@ def generate_local_response(user_input, sensor_data, user_memory):
         if user_location:
             greeting += f"How are things on your farm in {user_location}? "
         greeting += "How can I help you today?"
+        
+        # Add mode-specific greeting style
+        if current_mode:
+            if current_mode.name == 'learn':
+                greeting += "\n\n📚 I'm currently in **Learning Mode** - I'll provide detailed explanations and educational content to help you understand agricultural concepts better."
+            elif current_mode.name == 'read':
+                greeting += "\n\n📖 I'm currently in **Reading Mode** - I'll analyze and summarize information clearly and concisely."
+            elif current_mode.name == 'analyze':
+                greeting += "\n\n📊 I'm currently in **Analysis Mode** - I'll focus on data-driven insights and detailed examination of your farm conditions."
+            elif current_mode.name == 'creative':
+                greeting += "\n\n💡 I'm currently in **Creative Mode** - I'll generate innovative ideas and creative farming solutions for you."
+        
         return greeting
 
-    # Sensor data with personalized context
+    # Sensor data with personalized context and mode-specific analysis
     elif any(word in user_input_lower for word in ['sensor', 'data', 'reading', 'current conditions']):
         if sensor_data.get('status') == 'error':
             return "I'm sorry, but there seems to be an issue with the sensor data right now. Please check the sensor connections."
@@ -1226,6 +1349,35 @@ def generate_local_response(user_input, sensor_data, user_memory):
         response += f"🌱 **Soil Moisture**: {soil_moisture}% {soil_status}\n"
         response += f"⚗️ **pH Level**: {ph}\n"
 
+        # Add mode-specific analysis
+        if current_mode:
+            if current_mode.name == 'learn':
+                response += "\n📚 **Learning Mode Analysis**:\n"
+                response += "Here's what these readings mean for your farm:\n"
+                response += "• Temperature affects plant metabolic rates and growth\n"
+                response += "• Humidity influences disease pressure and transpiration rates\n"
+                response += "• Soil moisture is critical for nutrient uptake and root health\n"
+                response += "• pH levels determine nutrient availability in the soil\n"
+            elif current_mode.name == 'analyze':
+                response += "\n📊 **Analysis Mode Insights**:\n"
+                response += f"Data correlation analysis:\n"
+                if temp > 30 and humidity > 70:
+                    response += "• High temperature + high humidity = Increased fungal disease risk\n"
+                if soil_moisture < 30 and temp > 25:
+                    response += "• Low moisture + high temperature = Plant stress likely\n"
+                if ph < 6.0:
+                    response += "• Acidic pH may limit phosphorus and micronutrient availability\n"
+            elif current_mode.name == 'creative':
+                response += "\n💡 **Creative Mode Solutions**:\n"
+                response += "Innovative approaches based on current conditions:\n"
+                if temp > 30:
+                    response += "• Consider evaporative cooling or shade cloth technology\n"
+                if soil_moisture < 30:
+                    response += "• Explore drip irrigation with moisture sensors for precision watering\n"
+            elif current_mode.name == 'read':
+                response += "\n📖 **Reading Mode Summary**:\n"
+                response += f"Key observations: {temp_status}, {humidity_status}, {soil_status}\n"
+
         # Add crop-specific advice if user grows specific crops
         if user_crops:
             response += f"\n**For your {', '.join(user_crops)}:**\n"
@@ -1241,7 +1393,7 @@ def generate_local_response(user_input, sensor_data, user_memory):
 
         return response
 
-    # Enhanced watering advice with memory
+    # Enhanced watering advice with memory and mode-specific guidance
     elif any(word in user_input_lower for word in ['water', 'irrigation', 'watering']):
         soil_moisture = sensor_data.get('soil_moisture', 50)
         temp = sensor_data.get('temperature', 25)
@@ -1265,21 +1417,56 @@ def generate_local_response(user_input, sensor_data, user_memory):
             if 'lettuce' in user_crops:
                 response += "• Lettuce needs frequent, light watering\n"
 
+            # Add mode-specific watering advice
+            if current_mode:
+                if current_mode.name == 'learn':
+                    response += "\n📚 **Learning Mode - Understanding Watering**:\n"
+                    response += "Watering is crucial because:\n"
+                    response += "• It transports nutrients from soil to roots\n"
+                    response += "• It regulates plant temperature through transpiration\n"
+                    response += "• It maintains turgor pressure for structural support\n"
+                elif current_mode.name == 'analyze':
+                    response += "\n📊 **Analysis Mode - Water Efficiency**:\n"
+                    response += "Optimize water usage:\n"
+                    response += "• Consider soil moisture sensor integration\n"
+                    response += "• Calculate evapotranspiration rates\n"
+                    response += "• Monitor water penetration depth\n"
+                elif current_mode.name == 'creative':
+                    response += "\n💡 **Creative Mode - Watering Innovations**:\n"
+                    response += "Advanced watering techniques:\n"
+                    response += "• Explore sub-irrigation systems\n"
+                    response += "• Consider water harvesting and recycling\n"
+                    response += "• Try automated irrigation scheduling\n"
+
         elif soil_moisture > 70:
             response += "\n🟡 **Hold off** - Soil is quite moist\n\n"
             response += "**Recommendations:**\n"
             response += "• Skip watering to prevent root rot\n"
             response += "• Ensure good drainage\n"
             response += "• Monitor for overwatering signs\n"
+            
+            if current_mode and current_mode.name == 'learn':
+                response += "\n📚 **Learning Mode - Understanding Overwatering**:\n"
+                response += "Overwatering risks include:\n"
+                response += "• Root oxygen deprivation (asphyxiation)\n"
+                response += "• Increased fungal disease susceptibility\n"
+                response += "• Nutrient leaching from soil profile\n"
         else:
             response += "\n🟢 **Optimal** - Soil moisture is good\n\n"
             response += "**Recommendations:**\n"
             response += "• Continue current watering schedule\n"
             response += "• Water when moisture drops below 30%\n"
 
+            if current_mode and current_mode.name == 'creative':
+                response += "\n💡 **Creative Mode - Optimization Ideas**:\n"
+                response += "Enhance your current system:\n"
+                response += "• Implement smart irrigation controllers\n"
+                response += "• Add soil moisture sensors for automation\n"
+                response += "• Create custom watering schedules per crop zone\n"
+
         return response
 
-    # Default response with personalization
+    # Default response with personalization and mode-specific introduction
     else:
         response = "🤖 **AgriGenius AI Assistant**\n\n"
 
@@ -1290,6 +1477,22 @@ def generate_local_response(user_input, sensor_data, user_memory):
             if user_location:
                 response += f" in {user_location}"
             response += ". "
+
+        # Add mode-specific introduction
+        if current_mode:
+            response += f"\n🎯 **Current Mode: {current_mode.display_name}**\n"
+            response += f"{current_mode.description}\n\n"
+            
+            if current_mode.name == 'learn':
+                response += "📚 In **Learning Mode**, I'll focus on educational content and help you understand agricultural concepts deeply.\n\n"
+            elif current_mode.name == 'read':
+                response += "📖 In **Reading Mode**, I'll analyze and summarize information clearly and concisely.\n\n"
+            elif current_mode.name == 'analyze':
+                response += "📊 In **Analysis Mode**, I'll provide data-driven insights and detailed examination of your farm conditions.\n\n"
+            elif current_mode.name == 'creative':
+                response += "💡 In **Creative Mode**, I'll generate innovative ideas and creative farming solutions.\n\n"
+            elif current_mode.name == 'assist':
+                response += "🤖 In **Assist Mode**, I'll provide general farming assistance and practical advice.\n\n"
 
         response += "I can help you with:\n\n"
         response += "• 📊 **Sensor Data & Analysis**\n"
@@ -1592,8 +1795,15 @@ def like_article(article_id):
             article.likes += 1
             liked = True
         
+        # Get updated like count
+        like_count = Like.query.filter_by(article_id=article_id).count()
+        
         db.session.commit()
-        return jsonify({'liked': liked, 'likes_count': article.likes})
+        return jsonify({
+            'liked': liked,
+            'likes_count': like_count,
+            'message': 'Article ' + ('liked' if liked else 'unliked') + ' successfully'
+        })
     except Exception as e:
         db.session.rollback()
         return jsonify({'error': str(e)}), 500
@@ -1644,14 +1854,52 @@ def comment_article(article_id):
         db.session.add(comment)
         db.session.commit()
         
+        # Get updated comment count
+        comment_count = Comment.query.filter_by(article_id=article_id).count()
+        
         return jsonify({
             'success': True,
             'comment': {
                 'id': comment.id,
                 'content': comment.content,
-                'author': current_user.username,
+                'author': {
+                    'id': current_user.id,
+                    'username': current_user.username
+                },
+                'can_delete': True,
+                'article_id': article_id,
                 'created_at': comment.created_at.isoformat()
-            }
+            },
+            'comment_count': comment_count,
+            'message': 'Comment added successfully'
+        })
+    except Exception as e:
+        db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+# Delete comment from article
+@app.route('/api/delete_comment/<int:article_id>/<int:comment_id>', methods=['DELETE'])
+@login_required
+def delete_comment(article_id, comment_id):
+    try:
+        comment = Comment.query.get_or_404(comment_id)
+        
+        # Check if user can delete (author of comment, article owner, or admin)
+        if not (comment.user_id == current_user.id or 
+                comment.article.author_id == current_user.id or 
+                current_user.is_admin):
+            return jsonify({'error': 'Permission denied'}), 403
+        
+        db.session.delete(comment)
+        
+        # Get updated comment count
+        comment_count = Comment.query.filter_by(article_id=article_id).count()
+        
+        db.session.commit()
+        return jsonify({
+            'success': True,
+            'comment_count': comment_count,
+            'message': 'Comment deleted successfully'
         })
     except Exception as e:
         db.session.rollback()
@@ -1688,6 +1936,37 @@ def comment_doc(doc_id):
         })
     except Exception as e:
         db.session.rollback()
+        return jsonify({'error': str(e)}), 500
+
+
+# Save/unsave article (Save for later)
+@app.route('/api/save_article/<int:article_id>', methods=['POST'])
+@login_required
+def save_article(article_id):
+    try:
+        article = Article.query.get_or_404(article_id)
+        existing = SavedArticle.query.filter_by(user_id=current_user.id, article_id=article_id).first()
+        if existing:
+            db.session.delete(existing)
+            db.session.commit()
+            return jsonify({
+                'saved': False,
+                'message': 'Article removed from saved'
+            })
+        else:
+            saved = SavedArticle(
+                user_id=current_user.id, 
+                article_id=article_id
+            )
+            db.session.add(saved)
+            db.session.commit()
+            return jsonify({
+                'saved': True,
+                'message': 'Article saved successfully'
+            })
+    except Exception as e:
+        db.session.rollback()
+        app.logger.error(f'Error saving article {article_id}: {str(e)}')
         return jsonify({'error': str(e)}), 500
 
 # Edit article
@@ -1847,7 +2126,40 @@ def view_article(article_id):
         article = Article.query.get_or_404(article_id)
         article.views += 1
         db.session.commit()
-        return render_template('view_article.html', article=article)
+        
+        # Get comments for article
+        comments = Comment.query.filter_by(article_id=article_id)\
+            .order_by(Comment.created_at.desc()).all()
+            
+        # Check if user has liked the article
+        liked = False
+        saved = False
+        if current_user.is_authenticated:
+            liked = Like.query.filter_by(
+                user_id=current_user.id, 
+                article_id=article_id
+            ).first() is not None
+            saved = SavedArticle.query.filter_by(
+                user_id=current_user.id, 
+                article_id=article_id
+            ).first() is not None
+        
+        # Get related articles based on category
+        related_articles = Article.query\
+            .filter(Article.id != article_id)\
+            .filter_by(category=article.category)\
+            .filter_by(verified=True)\
+            .order_by(Article.created_at.desc())\
+            .limit(3)\
+            .all()
+        
+        return render_template('view_article.html', 
+            article=article,
+            comments=comments,
+            liked=liked,
+            saved=saved,
+            related_articles=related_articles
+        )
     except Exception as e:
         app.logger.error(f'Error viewing article {article_id}: {str(e)}')
         return redirect(url_for('articles'))
@@ -1866,11 +2178,256 @@ def view_doc(doc_id):
 
 
 
+@app.errorhandler(404)
+def not_found_error(error):
+    return render_template('404.html'), 404
+
+@app.errorhandler(500)
+def internal_error(error):
+    db.session.rollback()
+    return render_template('500.html'), 500
+
+
+# Initialize AI Modes
+def initialize_ai_modes():
+    """Initialize default AI modes if they don't exist"""
+    default_modes = [
+        {
+            'name': 'learn',
+            'display_name': 'Learn',
+            'description': 'Focus on educational content and agricultural learning',
+            'icon': 'fa-graduation-cap',
+            'color': '#4CAF50'
+        },
+        {
+            'name': 'read',
+            'display_name': 'Read',
+            'description': 'Document analysis and content summarization',
+            'icon': 'fa-book-open',
+            'color': '#2196F3'
+        },
+        {
+            'name': 'analyze',
+            'display_name': 'Analyze',
+            'description': 'Data analysis and agricultural insights',
+            'icon': 'fa-chart-line',
+            'color': '#FF9800'
+        },
+        {
+            'name': 'assist',
+            'display_name': 'Assist',
+            'description': 'General farming assistance and advice',
+            'icon': 'fa-robot',
+            'color': '#9C27B0'
+        },
+        {
+            'name': 'creative',
+            'display_name': 'Creative',
+            'description': 'Innovative farming ideas and creative solutions',
+            'icon': 'fa-lightbulb',
+            'color': '#E91E63'
+        }
+    ]
+    
+    for mode_data in default_modes:
+        existing_mode = AIMode.query.filter_by(name=mode_data['name']).first()
+        if not existing_mode:
+            mode = AIMode(**mode_data)
+            db.session.add(mode)
+    
+    db.session.commit()
+    app.logger.info('AI modes initialized successfully')
+
+# AI Mode Helper Functions
+def get_current_ai_mode(user_id, session_id):
+    """Get the current AI mode for user or session"""
+    try:
+        # First try to get from user preference
+        if user_id:
+            preference = UserAIModePreference.query.filter_by(user_id=user_id).order_by(UserAIModePreference.updated_at.desc()).first()
+            if preference:
+                return preference.mode
+        
+        # Then try session preference
+        if session_id:
+            preference = UserAIModePreference.query.filter_by(session_id=session_id).order_by(UserAIModePreference.updated_at.desc()).first()
+            if preference:
+                return preference.mode
+        
+        # Default to 'assist' mode
+        default_mode = AIMode.query.filter_by(name='assist').first()
+        return default_mode
+    except Exception as e:
+        app.logger.error(f'Error getting current AI mode: {str(e)}')
+        return None
+
+def set_current_ai_mode(user_id, session_id, mode_name):
+    """Set the current AI mode for user or session"""
+    try:
+        mode = AIMode.query.filter_by(name=mode_name).first()
+        if not mode:
+            return False
+        
+        # Check if preference already exists
+        if user_id:
+            existing_preference = UserAIModePreference.query.filter_by(user_id=user_id).first()
+            if existing_preference:
+                existing_preference.mode_id = mode.id
+                existing_preference.updated_at = datetime.now(timezone.utc)
+            else:
+                preference = UserAIModePreference(user_id=user_id, mode_id=mode.id)
+                db.session.add(preference)
+        else:
+            existing_preference = UserAIModePreference.query.filter_by(session_id=session_id).first()
+            if existing_preference:
+                existing_preference.mode_id = mode.id
+                existing_preference.updated_at = datetime.now(timezone.utc)
+            else:
+                preference = UserAIModePreference(session_id=session_id, mode_id=mode.id)
+                db.session.add(preference)
+        
+        db.session.commit()
+        return True
+    except Exception as e:
+        app.logger.error(f'Error setting AI mode: {str(e)}')
+        return False
+
+def get_all_ai_modes():
+    """Get all active AI modes"""
+    try:
+        return AIMode.query.filter_by(is_active=True).order_by(AIMode.display_name).all()
+    except Exception as e:
+        app.logger.error(f'Error getting AI modes: {str(e)}')
+        return []
+
+# API endpoints for AI mode management
+@app.route('/api/ai-modes', methods=['GET'])
+def get_ai_modes():
+    """Get all available AI modes"""
+    try:
+        modes = get_all_ai_modes()
+        modes_data = []
+        for mode in modes:
+            modes_data.append({
+                'id': mode.id,
+                'name': mode.name,
+                'display_name': mode.display_name,
+                'description': mode.description,
+                'icon': mode.icon,
+                'color': mode.color
+            })
+        
+        return jsonify({'modes': modes_data})
+    except Exception as e:
+        app.logger.error(f'Error fetching AI modes: {str(e)}')
+        return jsonify({'error': 'Failed to fetch AI modes'}), 500
+
+@app.route('/api/ai-modes/<mode_name>/set', methods=['POST'])
+def set_ai_mode(mode_name):
+    """Set the current AI mode for the user or session"""
+    try:
+        user_id = current_user.id if current_user.is_authenticated else None
+        session_id = session.get('chat_session_id')
+        
+        if not session_id:
+            import uuid
+            session_id = str(uuid.uuid4())
+            session['chat_session_id'] = session_id
+        
+        success = set_current_ai_mode(user_id, session_id, mode_name)
+        if success:
+            return jsonify({'success': True, 'message': f'Mode changed to {mode_name}'})
+        else:
+            return jsonify({'success': False, 'message': 'Invalid mode name'}), 400
+    except Exception as e:
+        app.logger.error(f'Error setting AI mode: {str(e)}')
+        return jsonify({'error': 'Failed to set AI mode'}), 500
+
+@app.route('/api/current-ai-mode', methods=['GET'])
+def get_current_mode():
+    """Get the current AI mode"""
+    try:
+        user_id = current_user.id if current_user.is_authenticated else None
+        session_id = session.get('chat_session_id')
+        
+        current_mode = get_current_ai_mode(user_id, session_id)
+        if current_mode:
+            return jsonify({
+                'mode': {
+                    'id': current_mode.id,
+                    'name': current_mode.name,
+                    'display_name': current_mode.display_name,
+                    'description': current_mode.description,
+                    'icon': current_mode.icon,
+                    'color': current_mode.color
+                }
+            })
+        else:
+            return jsonify({'error': 'No current mode found'}), 404
+    except Exception as e:
+        app.logger.error(f'Error getting current mode: {str(e)}')
+        return jsonify({'error': 'Failed to get current mode'}), 500
+
+# Initialize AI modes on app startup
+with app.app_context():
+    initialize_ai_modes()
+
+def get_mode_instructions(mode_name):
+    """Get mode-specific instructions for AI behavior"""
+    mode_instructions = {
+        'learn': """
+- Focus on educational content and agricultural learning
+- Provide detailed explanations of farming concepts
+- Include step-by-step guides and tutorials
+- Recommend learning resources and further reading
+- Ask follow-up questions to deepen understanding
+- Use teaching language and examples
+- Prioritize accuracy and completeness of information
+""",
+        'read': """
+- Specialize in document analysis and content summarization
+- Provide concise summaries of agricultural content
+- Extract key information and main points
+- Organize information in a clear, readable format
+- Highlight important data and recommendations
+- Maintain the original meaning and context
+- Focus on actionable insights from documents
+""",
+        'analyze': """
+- Focus on data analysis and agricultural insights
+- Examine sensor data and trends carefully
+- Provide data-driven recommendations
+- Identify patterns and correlations
+- Use analytical language and evidence-based reasoning
+- Consider multiple factors before giving advice
+- Provide quantitative insights when possible
+""",
+        'assist': """
+- Provide general farming assistance and advice
+- Be helpful, practical, and solution-oriented
+- Adapt to user's specific needs and context
+- Give clear, actionable recommendations
+- Be conversational and approachable
+- Focus on solving immediate problems
+- Balance expertise with user-friendliness
+""",
+        'creative': """
+- Generate innovative farming ideas and creative solutions
+- Think outside traditional agricultural approaches
+- Suggest novel applications and techniques
+- Encourage experimentation and new methods
+- Use imaginative language and examples
+- Focus on possibilities and opportunities
+- Inspire users to try new things
+"""
+    }
+    return mode_instructions.get(mode_name, mode_instructions['assist'])
+
 # Run the app
 if __name__ == '__main__':
-    with app.app_context():
-        db.create_all()
-    app.run(debug=True)
+    # Use 0.0.0.0 to make the app accessible on your local network
+    app.run(host='0.0.0.0', port=5000, debug=True)
+
 
 # Notes:
 # - home.html, articles.html, documentation.html, login.html, signup.html templates are required in the templates/ folder.

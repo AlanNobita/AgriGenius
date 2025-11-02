@@ -5,36 +5,86 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AgriGenius - Smart Agriculture Platform</title>
     <meta name="description" content="Revolutionary agricultural platform combining AI, IoT sensors, and community knowledge to transform modern farming.">
+    <meta name="theme-color" content="#2e7d32">
 
     <!-- Stylesheets -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <!-- Favicon -->
+    <link rel="icon" href="{{ url_for('static', filename='images/sprout.png') }}" sizes="32x32" type="image/png">
+    <link rel="icon" href="{{ url_for('static', filename='images/gemini-chatbot-logo.svg') }}" type="image/svg+xml">
 
     <!-- Preload critical resources -->
     <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&display=swap" as="style">
 </head>
 <body class="fade-in">
+    <a href="#main-content" class="visually-hidden-focusable position-absolute top-0 start-0 m-2 p-2 bg-white border rounded" style="z-index: 2000;">Skip to content</a>
     {% include 'navbar.html' %}
 
-    <!-- Hero Section -->
-    <section class="hero-section">
+    <!-- Enhanced Hero Section -->
+    <main id="main-content" role="main">
+    <section class="hero-section bg-gradient-hero">
         <div class="container">
-            <div class="hero-content slide-up">
-                <h1 class="hero-title">
-                    Welcome to <span class="text-gradient">AgriGenius</span>
-                </h1>
-                <p class="hero-subtitle">
-                    Revolutionizing agriculture through AI-powered insights, real-time monitoring, and community-driven knowledge sharing.
-                </p>
-                <div class="hero-actions">
-                    <a href="/chat" class="btn btn-primary btn-lg me-3">
-                        <i class="fas fa-robot"></i> Try AI Assistant
-                    </a>
-                    <a href="/articles" class="btn btn-outline-primary btn-lg">
-                        <i class="fas fa-newspaper"></i> Explore Articles
-                    </a>
+            <div class="hero-content slide-up animate-bounce-in">
+                <div class="hero-badge animate-pulse-glow">
+                    <i class="fas fa-leaf animate-emerald"></i>
+                    <span>Premium Agricultural Platform</span>
                 </div>
+                <h1 class="hero-title">
+                    Welcome to <span class="text-gradient-rainbow animate-rainbow-shift">AgriGenius</span>
+                </h1>
+                <p class="hero-subtitle animate-fade-in">
+                    Revolutionizing agriculture through AI-powered insights, real-time monitoring, and community-driven knowledge sharing.
+                    Join <span class="text-gradient-dawn">1,247+</span> active farmers transforming their operations.
+                </p>
+                <div class="hero-actions animate-slide-in-up">
+                    <div class="hero-buttons">
+                        <a href="/chat" class="btn btn-gradient-rainbow btn-lg me-3 interactive-glow">
+                            <i class="fas fa-robot animate-pulse-glow"></i> Try AI Assistant
+                        </a>
+                        <a href="/articles" class="btn btn-gradient-success btn-lg interactive-glow">
+                            <i class="fas fa-newspaper animate-pulse-glow"></i> Explore Articles
+                        </a>
+                    </div>
+                    <div class="hero-secondary">
+                        <a href="/marketplace" class="btn btn-outline-light btn-lg interactive-glow">
+                            <i class="fas fa-store animate-pulse-glow"></i> Browse Marketplace
+                        </a>
+                    </div>
+                </div>
+                <div class="hero-features animate-fade-in">
+                    <div class="feature-item">
+                        <i class="fas fa-brain animate-red"></i>
+                        <span>AI-Powered Insights</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-satellite-dish animate-blue"></i>
+                        <span>Real-time Monitoring</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-users animate-green"></i>
+                        <span>Community Knowledge</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-chart-line animate-purple"></i>
+                        <span>Analytics & Reports</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="hero-background">
+            <div class="floating-element animate-float">
+                <i class="fas fa-seedling animate-emerald"></i>
+            </div>
+            <div class="floating-element animate-float" style="animation-delay: 1s;">
+                <i class="fas fa-water animate-blue"></i>
+            </div>
+            <div class="floating-element animate-float" style="animation-delay: 2s;">
+                <i class="fas fa-sun animate-yellow"></i>
             </div>
         </div>
     </section>
@@ -43,75 +93,177 @@
     <section class="py-5">
         <div class="container">
             <div class="stats-grid">
-                <div class="stat-card scale-hover">
-                    <span class="stat-number" id="userCount">1,247</span>
+                <div class="stat-card scale-hover animate-float border-rainbow">
+                    <span class="stat-number animate-emerald" id="userCount">1,247</span>
                     <span class="stat-label">Active Farmers</span>
                 </div>
-                <div class="stat-card scale-hover">
-                    <span class="stat-number" id="articleCount">856</span>
+                <div class="stat-card scale-hover animate-float border-rainbow">
+                    <span class="stat-number animate-blue" id="articleCount">856</span>
                     <span class="stat-label">Knowledge Articles</span>
                 </div>
-                <div class="stat-card scale-hover">
-                    <span class="stat-number" id="sensorCount">2,341</span>
+                <div class="stat-card scale-hover animate-float border-rainbow">
+                    <span class="stat-number animate-purple" id="sensorCount">2,341</span>
                     <span class="stat-label">Sensor Readings</span>
                 </div>
-                <div class="stat-card scale-hover">
-                    <span class="stat-number" id="successRate">94%</span>
+                <div class="stat-card scale-hover animate-float border-rainbow">
+                    <span class="stat-number animate-pink" id="successRate">94%</span>
                     <span class="stat-label">Success Rate</span>
                 </div>
             </div>
         </div>
     </section>
 
-    <!-- Features Section -->
-    <section class="py-5 bg-light">
+    <!-- Enhanced Features Section -->
+    <section class="py-5 bg-gradient-spring">
         <div class="container">
             <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold text-gradient">Powerful Features for Modern Farming</h2>
-                <p class="lead text-muted">Everything you need to optimize your agricultural operations</p>
+                <div class="section-badge animate-pulse-glow">
+                    <i class="fas fa-star animate-yellow"></i>
+                    <span>Premium Features</span>
+                </div>
+                <h2 class="display-5 fw-bold text-gradient-dawn animate-rainbow-shift">Powerful Features for Modern Farming</h2>
+                <p class="lead text-secondary-emphasis animate-fade-in">Everything you need to optimize your agricultural operations</p>
             </div>
 
             <div class="feature-grid">
-                <div class="feature-card scale-hover">
-                    <i class="feature-icon fas fa-brain"></i>
+                <div class="feature-card scale-hover interactive-glow animate-bounce-in stagger-1 card-gradient-top">
+                    <div class="feature-icon-wrapper">
+                        <i class="feature-icon fas fa-brain animate-red"></i>
+                        <div class="feature-pulse animate-pulse-glow"></div>
+                    </div>
                     <h4>AI-Powered Insights</h4>
                     <p>Get intelligent recommendations based on real-time data analysis and machine learning algorithms.</p>
-                    <a href="/chat" class="btn btn-outline-primary">Try Now</a>
+                    <div class="feature-actions">
+                        <a href="/chat" class="btn btn-gradient-rainbow interactive-glow">
+                            <i class="fas fa-rocket"></i> Try Now
+                        </a>
+                        <div class="feature-stats">
+                            <span><i class="fas fa-check-circle animate-emerald"></i> 98% Accuracy</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="feature-card scale-hover">
-                    <i class="feature-icon fas fa-satellite-dish"></i>
+                <div class="feature-card scale-hover interactive-glow animate-bounce-in stagger-2 card-gradient-top">
+                    <div class="feature-icon-wrapper">
+                        <i class="feature-icon fas fa-satellite-dish animate-orange"></i>
+                        <div class="feature-pulse animate-pulse-glow"></div>
+                    </div>
                     <h4>IoT Sensor Network</h4>
                     <p>Monitor soil moisture, temperature, pH levels, and nutrients with our advanced sensor technology.</p>
-                    <a href="/dashboard" class="btn btn-outline-primary">View Dashboard</a>
+                    <div class="feature-actions">
+                        <a href="/dashboard" class="btn btn-gradient-success interactive-glow">
+                            <i class="fas fa-chart-line"></i> View Dashboard
+                        </a>
+                        <div class="feature-stats">
+                            <span><i class="fas fa-satellite animate-blue"></i> 2,341 Active</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="feature-card scale-hover">
-                    <i class="feature-icon fas fa-users"></i>
+                <div class="feature-card scale-hover interactive-glow animate-bounce-in stagger-3 card-gradient-top">
+                    <div class="feature-icon-wrapper">
+                        <i class="feature-icon fas fa-users animate-yellow"></i>
+                        <div class="feature-pulse animate-pulse-glow"></div>
+                    </div>
                     <h4>Community Knowledge</h4>
                     <p>Share experiences, learn from experts, and collaborate with farmers worldwide.</p>
-                    <a href="/articles" class="btn btn-outline-primary">Join Community</a>
+                    <div class="feature-actions">
+                        <a href="/articles" class="btn btn-gradient-info interactive-glow">
+                            <i class="fas fa-users"></i> Join Community
+                        </a>
+                        <div class="feature-stats">
+                            <span><i class="fas fa-comments animate-green"></i> 856 Articles</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="feature-card scale-hover">
-                    <i class="feature-icon fas fa-store"></i>
+                <div class="feature-card scale-hover interactive-glow animate-bounce-in stagger-4 card-gradient-top">
+                    <div class="feature-icon-wrapper">
+                        <i class="feature-icon fas fa-store animate-green"></i>
+                        <div class="feature-pulse animate-pulse-glow"></div>
+                    </div>
                     <h4>Marketplace</h4>
                     <p>Buy and sell agricultural products, tools, and equipment in our integrated marketplace.</p>
-                    <a href="/marketplace" class="btn btn-outline-primary">Browse Products</a>
+                    <div class="feature-actions">
+                        <a href="/marketplace" class="btn btn-gradient-warning interactive-glow">
+                            <i class="fas fa-shopping-cart"></i> Browse Products
+                        </a>
+                        <div class="feature-stats">
+                            <span><i class="fas fa-box animate-orange"></i> 500+ Products</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="feature-card scale-hover">
-                    <i class="feature-icon fas fa-chart-line"></i>
+                <div class="feature-card scale-hover interactive-glow animate-bounce-in stagger-5 card-gradient-top">
+                    <div class="feature-icon-wrapper">
+                        <i class="feature-icon fas fa-chart-line animate-blue"></i>
+                        <div class="feature-pulse animate-pulse-glow"></div>
+                    </div>
                     <h4>Analytics & Reports</h4>
                     <p>Track your farm's performance with detailed analytics and customizable reports.</p>
-                    <a href="/dashboard" class="btn btn-outline-primary">View Analytics</a>
+                    <div class="feature-actions">
+                        <a href="/dashboard" class="btn btn-gradient-primary interactive-glow">
+                            <i class="fas fa-chart-bar"></i> View Analytics
+                        </a>
+                        <div class="feature-stats">
+                            <span><i class="fas fa-file-alt animate-purple"></i> Custom Reports</span>
+                        </div>
+                    </div>
                 </div>
 
-                <div class="feature-card scale-hover">
-                    <i class="feature-icon fas fa-mobile-alt"></i>
+                <div class="feature-card scale-hover interactive-glow animate-bounce-in stagger-6 card-gradient-top">
+                    <div class="feature-icon-wrapper">
+                        <i class="feature-icon fas fa-mobile-alt animate-purple"></i>
+                        <div class="feature-pulse animate-pulse-glow"></div>
+                    </div>
                     <h4>Mobile Ready</h4>
                     <p>Access all features on-the-go with our responsive design and mobile-optimized interface.</p>
-                    <a href="#" class="btn btn-outline-primary">Download App</a>
+                    <div class="feature-actions">
+                        <a href="#" class="btn btn-gradient-danger interactive-glow">
+                            <i class="fas fa-download"></i> Download App
+                        </a>
+                        <div class="feature-stats">
+                            <span><i class="fas fa-mobile animate-pink"></i> iOS & Android</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="feature-showcase mt-5">
+                <div class="row align-items-center">
+                    <div class="col-lg-6">
+                        <div class="showcase-content">
+                            <h3 class="mb-3 text-gradient-emerald">Trusted by Farmers Worldwide</h3>
+                            <p class="text-secondary">Join our growing community of agricultural professionals who are already using AgriGenius to transform their farming operations.</p>
+                            <div class="trust-badges">
+                                <div class="badge badge-gradient-success">
+                                    <i class="fas fa-award"></i> Award Winning
+                                </div>
+                                <div class="badge badge-gradient-info">
+                                    <i class="fas fa-shield-alt"></i> Secure & Private
+                                </div>
+                                <div class="badge badge-gradient-warning">
+                                    <i class="fas fa-headset"></i> 24/7 Support
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-lg-6">
+                        <div class="showcase-stats">
+                            <div class="stat-item">
+                                <span class="stat-number animate-emerald">94%</span>
+                                <span class="stat-label">Success Rate</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number animate-blue">24/7</span>
+                                <span class="stat-label">Support</span>
+                            </div>
+                            <div class="stat-item">
+                                <span class="stat-number animate-purple">50+</span>
+                                <span class="stat-label">Countries</span>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -121,23 +273,23 @@
     <section class="py-5 bg-light">
         <div class="container">
             <div class="text-center mb-5">
-                <h2 class="display-5 fw-bold text-gradient">
-                    <i class="fas fa-warehouse me-2"></i>
+                <h2 class="display-5 fw-bold text-gradient animate-rainbow-shift">
+                    <i class="fas fa-warehouse me-2 animate-teal"></i>
                     Shed Status Monitor
                 </h2>
-                <p class="lead text-muted">Real-time monitoring of all your farm sheds and storage facilities</p>
+                <p class="lead text-muted animate-fade-in">Real-time monitoring of all your farm sheds and storage facilities</p>
             </div>
 
             <div class="row g-4">
                 <div class="col-md-6 col-lg-3">
-                    <div class="card card-enhanced h-100 border-0 shadow">
+                    <div class="card card-enhanced h-100 border-0 shadow interactive-rainbow animate-scale-in stagger-1">
                         <div class="card-body text-center">
                             <div class="mb-3">
-                                <i class="fas fa-warehouse fa-3x text-success"></i>
+                                <i class="fas fa-warehouse fa-3x animate-emerald"></i>
                             </div>
                             <h5 class="card-title">Shed A - Grain Storage</h5>
                             <div class="mb-3">
-                                <span class="badge bg-success fs-6">
+                                <span class="badge bg-success fs-6 animate-pulse-glow">
                                     <i class="fas fa-check-circle me-1"></i>
                                     Operational
                                 </span>
@@ -165,14 +317,14 @@
                 </div>
 
                 <div class="col-md-6 col-lg-3">
-                    <div class="card card-enhanced h-100 border-0 shadow">
+                    <div class="card card-enhanced h-100 border-0 shadow interactive-rainbow animate-scale-in stagger-2">
                         <div class="card-body text-center">
                             <div class="mb-3">
-                                <i class="fas fa-warehouse fa-3x text-success"></i>
+                                <i class="fas fa-warehouse fa-3x animate-blue"></i>
                             </div>
                             <h5 class="card-title">Shed B - Equipment</h5>
                             <div class="mb-3">
-                                <span class="badge bg-success fs-6">
+                                <span class="badge bg-success fs-6 animate-pulse-glow">
                                     <i class="fas fa-check-circle me-1"></i>
                                     Operational
                                 </span>
@@ -200,14 +352,14 @@
                 </div>
 
                 <div class="col-md-6 col-lg-3">
-                    <div class="card card-enhanced h-100 border-0 shadow">
+                    <div class="card card-enhanced h-100 border-0 shadow interactive-rainbow animate-scale-in stagger-3">
                         <div class="card-body text-center">
                             <div class="mb-3">
-                                <i class="fas fa-warehouse fa-3x text-warning"></i>
+                                <i class="fas fa-warehouse fa-3x animate-orange"></i>
                             </div>
                             <h5 class="card-title">Shed C - Livestock</h5>
                             <div class="mb-3">
-                                <span class="badge bg-warning fs-6">
+                                <span class="badge bg-warning fs-6 animate-pulse-glow">
                                     <i class="fas fa-exclamation-triangle me-1"></i>
                                     Attention Needed
                                 </span>
@@ -235,14 +387,14 @@
                 </div>
 
                 <div class="col-md-6 col-lg-3">
-                    <div class="card card-enhanced h-100 border-0 shadow">
+                    <div class="card card-enhanced h-100 border-0 shadow interactive-rainbow animate-scale-in stagger-4">
                         <div class="card-body text-center">
                             <div class="mb-3">
-                                <i class="fas fa-warehouse fa-3x text-success"></i>
+                                <i class="fas fa-warehouse fa-3x animate-purple"></i>
                             </div>
                             <h5 class="card-title">Shed D - Produce</h5>
                             <div class="mb-3">
-                                <span class="badge bg-success fs-6">
+                                <span class="badge bg-success fs-6 animate-pulse-glow">
                                     <i class="fas fa-check-circle me-1"></i>
                                     Operational
                                 </span>
@@ -271,8 +423,8 @@
             </div>
 
             <div class="text-center mt-4">
-                <a href="/dashboard" class="btn btn-primary btn-lg">
-                    <i class="fas fa-chart-line me-2"></i>
+                <a href="/dashboard" class="btn btn-primary btn-lg interactive-rainbow animate-bounce-in">
+                    <i class="fas fa-chart-line me-2 animate-pulse-glow"></i>
                     View Full Dashboard
                 </a>
             </div>
@@ -284,40 +436,40 @@
         <div class="container">
             <div class="row align-items-center">
                 <div class="col-lg-6">
-                    <h2 class="display-6 fw-bold mb-4">Real-time Farm Monitoring</h2>
-                    <p class="lead mb-4">Stay connected to your farm 24/7 with our advanced IoT sensor network. Monitor critical parameters and receive instant alerts.</p>
+                    <h2 class="display-6 fw-bold mb-4 animate-rainbow-shift">Real-time Farm Monitoring</h2>
+                    <p class="lead mb-4 animate-fade-in">Stay connected to your farm 24/7 with our advanced IoT sensor network. Monitor critical parameters and receive instant alerts.</p>
                     <div class="row g-3">
                         <div class="col-6">
-                            <div class="card text-center">
+                            <div class="card text-center interactive-rainbow animate-bounce-in stagger-1">
                                 <div class="card-body">
-                                    <i class="fas fa-thermometer-half text-danger fs-2 mb-2"></i>
+                                    <i class="fas fa-thermometer-half animate-red fs-2 mb-2"></i>
                                     <h5 class="card-title">Temperature</h5>
                                     <p class="card-text fs-4 fw-bold" id="liveTemp">24°C</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="card text-center">
+                            <div class="card text-center interactive-rainbow animate-bounce-in stagger-2">
                                 <div class="card-body">
-                                    <i class="fas fa-tint text-primary fs-2 mb-2"></i>
+                                    <i class="fas fa-tint animate-blue fs-2 mb-2"></i>
                                     <h5 class="card-title">Humidity</h5>
                                     <p class="card-text fs-4 fw-bold" id="liveHumidity">68%</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="card text-center">
+                            <div class="card text-center interactive-rainbow animate-bounce-in stagger-3">
                                 <div class="card-body">
-                                    <i class="fas fa-seedling text-success fs-2 mb-2"></i>
+                                    <i class="fas fa-seedling animate-green fs-2 mb-2"></i>
                                     <h5 class="card-title">Soil Moisture</h5>
                                     <p class="card-text fs-4 fw-bold" id="liveSoil">45%</p>
                                 </div>
                             </div>
                         </div>
                         <div class="col-6">
-                            <div class="card text-center">
+                            <div class="card text-center interactive-rainbow animate-bounce-in stagger-4">
                                 <div class="card-body">
-                                    <i class="fas fa-flask text-warning fs-2 mb-2"></i>
+                                    <i class="fas fa-flask animate-yellow fs-2 mb-2"></i>
                                     <h5 class="card-title">pH Level</h5>
                                     <p class="card-text fs-4 fw-bold" id="livePH">6.8</p>
                                 </div>
@@ -326,9 +478,9 @@
                     </div>
                 </div>
                 <div class="col-lg-6">
-                    <div class="card shadow-lg">
+                    <div class="card shadow-lg interactive-rainbow animate-scale-in">
                         <div class="card-header bg-gradient-primary text-white">
-                            <h5 class="mb-0"><i class="fas fa-chart-area"></i> Live Sensor Chart</h5>
+                            <h5 class="mb-0"><i class="fas fa-chart-area animate-pulse-glow"></i> Live Sensor Chart</h5>
                         </div>
                         <div class="card-body">
                             <canvas id="sensorChart" width="400" height="200"></canvas>
@@ -339,39 +491,108 @@
         </div>
     </section>
 
-    <!-- Call to Action Section -->
-    <section class="py-5 bg-gradient-primary text-white">
-        <div class="container text-center">
-            <h2 class="display-5 fw-bold mb-4">Ready to Transform Your Farm?</h2>
-            <p class="lead mb-4">Join thousands of farmers who are already using AgriGenius to optimize their operations.</p>
-            <div class="row justify-content-center">
-                <div class="col-md-8">
+    <!-- Enhanced Call to Action Section -->
+    <section class="py-5 bg-gradient-midnight text-white">
+        <div class="container">
+            <div class="cta-content text-center">
+                <div class="cta-badge animate-pulse-glow">
+                    <i class="fas fa-rocket animate-emerald"></i>
+                    <span>Start Your Journey</span>
+                </div>
+                <h2 class="display-5 fw-bold mb-4 text-gradient-rainbow animate-rainbow-shift">Ready to Transform Your Farm?</h2>
+                <p class="lead mb-4 text-light animate-fade-in">
+                    Join thousands of farmers who are already using AgriGenius to optimize their operations.
+                    Experience the future of agriculture today with our comprehensive platform.
+                </p>
+                
+                <div class="cta-features mb-5 animate-slide-in-up">
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle animate-emerald"></i>
+                        <span>Free 14-Day Trial</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle animate-blue"></i>
+                        <span>No Credit Card Required</span>
+                    </div>
+                    <div class="feature-item">
+                        <i class="fas fa-check-circle animate-purple"></i>
+                        <span>24/7 Support</span>
+                    </div>
+                </div>
+
+                <div class="cta-buttons">
                     {% if not current_user.is_authenticated %}
-                    <a href="/signup" class="btn btn-light btn-lg me-3">
-                        <i class="fas fa-user-plus"></i> Get Started Free
-                    </a>
-                    <a href="/chat" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-robot"></i> Try AI Assistant
-                    </a>
+                    <div class="cta-primary">
+                        <a href="/signup" class="btn btn-gradient-rainbow btn-lg me-3 interactive-glow animate-bounce-in">
+                            <i class="fas fa-user-plus animate-pulse-glow"></i> Get Started Free
+                        </a>
+                        <a href="/chat" class="btn btn-outline-light btn-lg interactive-glow animate-bounce-in">
+                            <i class="fas fa-robot animate-pulse-glow"></i> Try AI Assistant
+                        </a>
+                    </div>
+                    <div class="cta-secondary mt-3">
+                        <p class="mb-0 text-light">
+                            Already have an account?
+                            <a href="/login" class="text-decoration-none text-white fw-bold">Sign In</a>
+                        </p>
+                    </div>
                     {% else %}
-                    <a href="/dashboard" class="btn btn-light btn-lg me-3">
-                        <i class="fas fa-chart-line"></i> View Dashboard
-                    </a>
-                    <a href="/chat" class="btn btn-outline-light btn-lg">
-                        <i class="fas fa-robot"></i> Ask AI Assistant
-                    </a>
+                    <div class="cta-primary">
+                        <a href="/dashboard" class="btn btn-gradient-success btn-lg me-3 interactive-glow animate-bounce-in">
+                            <i class="fas fa-chart-line animate-pulse-glow"></i> View Dashboard
+                        </a>
+                        <a href="/chat" class="btn btn-gradient-info btn-lg interactive-glow animate-bounce-in">
+                            <i class="fas fa-robot animate-pulse-glow"></i> Ask AI Assistant
+                        </a>
+                    </div>
+                    <div class="cta-secondary mt-3">
+                        <p class="mb-0 text-light">
+                            Need help?
+                            <a href="/contact" class="text-decoration-none text-white fw-bold">Contact Support</a>
+                        </p>
+                    </div>
                     {% endif %}
+                </div>
+
+                <div class="cta-social mt-5 animate-fade-in">
+                    <p class="mb-3 text-light">Join our community</p>
+                    <div class="social-links">
+                        <a href="#" class="social-link interactive-glow">
+                            <i class="fab fa-facebook-f"></i>
+                        </a>
+                        <a href="#" class="social-link interactive-glow">
+                            <i class="fab fa-twitter"></i>
+                        </a>
+                        <a href="#" class="social-link interactive-glow">
+                            <i class="fab fa-instagram"></i>
+                        </a>
+                        <a href="#" class="social-link interactive-glow">
+                            <i class="fab fa-linkedin-in"></i>
+                        </a>
+                        <a href="#" class="social-link interactive-glow">
+                            <i class="fab fa-youtube"></i>
+                        </a>
+                    </div>
                 </div>
             </div>
         </div>
+        <div class="cta-background">
+            <div class="floating-stars">
+                <i class="fas fa-star animate-yellow"></i>
+                <i class="fas fa-star animate-blue" style="animation-delay: 0.5s;"></i>
+                <i class="fas fa-star animate-purple" style="animation-delay: 1s;"></i>
+                <i class="fas fa-star animate-emerald" style="animation-delay: 1.5s;"></i>
+            </div>
+        </div>
     </section>
+    </main>
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
     <script>
-        // Animated counters for stats
+        // Enhanced Animated counters for stats
         function animateCounter(element, target, duration = 2000) {
             const start = 0;
             const increment = target / (duration / 16);
@@ -392,20 +613,51 @@
             }, 16);
         }
 
-        // Live sensor data simulation
+        // Enhanced Live sensor data simulation
         function updateSensorData() {
             const temp = Math.floor(Math.random() * 10) + 20;
             const humidity = Math.floor(Math.random() * 20) + 60;
             const soil = Math.floor(Math.random() * 30) + 35;
             const ph = (Math.random() * 2 + 6).toFixed(1);
 
-            document.getElementById('liveTemp').textContent = temp + '°C';
-            document.getElementById('liveHumidity').textContent = humidity + '%';
-            document.getElementById('liveSoil').textContent = soil + '%';
-            document.getElementById('livePH').textContent = ph;
+            // Update with smooth transitions
+            updateElementWithTransition('liveTemp', temp + '°C');
+            updateElementWithTransition('liveHumidity', humidity + '%');
+            updateElementWithTransition('liveSoil', soil + '%');
+            updateElementWithTransition('livePH', ph);
+
+            // Update shed data
+            updateElementWithTransition('shedATemp', (Math.floor(Math.random() * 5) + 20) + '°C');
+            updateElementWithTransition('shedAHumidity', (Math.floor(Math.random() * 20) + 50) + '%');
+            updateElementWithTransition('shedACapacity', (Math.floor(Math.random() * 30) + 70) + '%');
+
+            updateElementWithTransition('shedBTemp', (Math.floor(Math.random() * 5) + 22) + '°C');
+            updateElementWithTransition('shedBHumidity', (Math.floor(Math.random() * 20) + 60) + '%');
+            updateElementWithTransition('shedBEquipment', (Math.floor(Math.random() * 5) + 10) + ' items');
+
+            updateElementWithTransition('shedCTemp', (Math.floor(Math.random() * 5) + 27) + '°C');
+            updateElementWithTransition('shedCHumidity', (Math.floor(Math.random() * 20) + 65) + '%');
+            updateElementWithTransition('shedCAnimals', (Math.floor(Math.random() * 5) + 22) + ' heads');
+
+            updateElementWithTransition('shedDTemp', (Math.floor(Math.random() * 5) + 16) + '°C');
+            updateElementWithTransition('shedDHumidity', (Math.floor(Math.random() * 20) + 40) + '%');
+            updateElementWithTransition('shedDProduce', (Math.floor(Math.random() * 200) + 800) + ' kg');
         }
 
-        // Initialize chart
+        // Smooth element update with transition
+        function updateElementWithTransition(id, value) {
+            const element = document.getElementById(id);
+            if (element) {
+                element.style.transition = 'color 0.3s ease';
+                element.style.color = '#ff6b6b';
+                element.textContent = value;
+                setTimeout(() => {
+                    element.style.color = '';
+                }, 300);
+            }
+        }
+
+        // Enhanced Initialize chart
         function initSensorChart() {
             const ctx = document.getElementById('sensorChart').getContext('2d');
             const chart = new Chart(ctx, {
@@ -417,58 +669,153 @@
                         data: [22, 24, 23, 25, 26, 24, 23],
                         borderColor: '#dc3545',
                         backgroundColor: 'rgba(220, 53, 69, 0.1)',
-                        tension: 0.4
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }, {
                         label: 'Humidity (%)',
                         data: [65, 68, 70, 67, 64, 66, 68],
                         borderColor: '#0d6efd',
                         backgroundColor: 'rgba(13, 110, 253, 0.1)',
-                        tension: 0.4
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
+                    }, {
+                        label: 'Soil Moisture (%)',
+                        data: [42, 45, 43, 47, 44, 46, 45],
+                        borderColor: '#28a745',
+                        backgroundColor: 'rgba(40, 167, 69, 0.1)',
+                        tension: 0.4,
+                        borderWidth: 3,
+                        pointRadius: 4,
+                        pointHoverRadius: 6
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'top',
+                            labels: {
+                                usePointStyle: true,
+                                padding: 20
+                            }
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                            titleColor: '#fff',
+                            bodyColor: '#fff',
+                            borderColor: '#ddd',
+                            borderWidth: 1
+                        }
+                    },
                     scales: {
                         y: {
-                            beginAtZero: true
+                            beginAtZero: true,
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
+                        },
+                        x: {
+                            grid: {
+                                color: 'rgba(0, 0, 0, 0.05)'
+                            }
                         }
+                    },
+                    interaction: {
+                        mode: 'nearest',
+                        axis: 'x',
+                        intersect: false
                     }
                 }
             });
+
+            // Add real-time data updates
+            setInterval(() => {
+                // Update chart data
+                chart.data.datasets.forEach(dataset => {
+                    dataset.data.shift();
+                    const lastValue = dataset.data[dataset.data.length - 1];
+                    const newValue = lastValue + (Math.random() - 0.5) * 4;
+                    dataset.data.push(Math.max(0, newValue));
+                });
+                chart.update('none');
+            }, 5000);
+
+            return chart;
         }
 
-        // Initialize everything when page loads
+        // Enhanced Initialize everything when page loads
         document.addEventListener('DOMContentLoaded', function() {
-            // Animate counters
-            animateCounter(document.getElementById('userCount'), 1247);
-            animateCounter(document.getElementById('articleCount'), 856);
-            animateCounter(document.getElementById('sensorCount'), 2341);
-            animateCounter(document.getElementById('successRate'), 94);
+            // Animate counters with staggered start
+            setTimeout(() => animateCounter(document.getElementById('userCount'), 1247), 200);
+            setTimeout(() => animateCounter(document.getElementById('articleCount'), 856), 400);
+            setTimeout(() => animateCounter(document.getElementById('sensorCount'), 2341), 600);
+            setTimeout(() => animateCounter(document.getElementById('successRate'), 94), 800);
 
             // Initialize chart
-            initSensorChart();
+            const sensorChart = initSensorChart();
 
             // Update sensor data every 5 seconds
             updateSensorData();
             setInterval(updateSensorData, 5000);
 
-            // Add scroll animations
+            // Enhanced scroll animations
             const observerOptions = {
                 threshold: 0.1,
-                rootMargin: '0px 0px -50px 0px'
+                rootMargin: '0px 0px -100px 0px'
             };
 
             const observer = new IntersectionObserver((entries) => {
                 entries.forEach(entry => {
                     if (entry.isIntersecting) {
                         entry.target.classList.add('slide-up');
+                        
+                        // Add stagger animation to child elements
+                        const children = entry.target.querySelectorAll('.feature-item, .stat-item, .badge');
+                        children.forEach((child, index) => {
+                            setTimeout(() => {
+                                child.classList.add('animate-fade-in');
+                            }, index * 100);
+                        });
                     }
                 });
             }, observerOptions);
 
-            document.querySelectorAll('.feature-card, .stat-card').forEach(el => {
+            // Observe elements for animation
+            document.querySelectorAll('.feature-card, .stat-card, .feature-grid, .cta-content').forEach(el => {
                 observer.observe(el);
+            });
+
+            // Add parallax effect to hero background
+            window.addEventListener('scroll', () => {
+                const scrolled = window.pageYOffset;
+                const parallax = document.querySelector('.hero-background');
+                if (parallax) {
+                    const speed = scrolled * 0.5;
+                    parallax.style.transform = `translateY(${speed}px)`;
+                }
+            });
+
+            // Add interactive hover effects
+            document.querySelectorAll('.interactive-glow').forEach(element => {
+                element.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-4px) scale(1.05)';
+                });
+                
+                element.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0) scale(1)';
+                });
+            });
+
+            // Initialize floating animations
+            document.querySelectorAll('.floating-element, .floating-stars').forEach(element => {
+                element.style.animationDelay = Math.random() * 3 + 's';
             });
         });
     </script>
